@@ -1,0 +1,15 @@
+export { UsersTable } from "./users-table";
+export { FacultiesTable } from "./faculties-table";
+export { DepartmentsTable } from "./departments-table";
+export { ProgrammesTable } from "./programmes-table";
+export { CoursesTable } from "./courses-table";
+export { AcademicSessionsTable } from "./academic-sessions-table";
+export { PaymentsTable } from "./payments-table";
+export { AnnouncementsTable } from "./announcements-table";
+export { HostelsTable } from "./hostels-table";
+export { ScholarshipsTable } from "./scholarships-table";
+export { ClearancesTable } from "./clearances-table";
+export { ResultsTable } from "./results-table";
+export { AttendanceTable } from "./attendance-table";
+export { NotificationsTable } from "./notifications-table";
+export { ExaminationsTable } from "./examinations-table";

@@ -1,16 +1,79 @@
 import { protectedProcedure, publicProcedure } from "../index";
 import type { RouterClient } from "@orpc/server";
+import {
+  usersRouter,
+  facultiesRouter,
+  departmentsRouter,
+  programmesRouter,
+  coursesRouter,
+  courseAllocationRouter,
+  courseRegistrationsRouter,
+  resultsRouter,
+  academicSessionsRouter,
+  feeStructuresRouter,
+  paymentsRouter,
+  attendanceRouter,
+  hostelsRouter,
+  hostelRoomsRouter,
+  hostelAllocationsRouter,
+  announcementsRouter,
+  notificationsRouter,
+  clearancesRouter,
+  documentsRouter,
+  examinationsRouter,
+  examCardsRouter,
+  transcriptsRouter,
+  certificatesRouter,
+  petitionsRouter,
+  senateDecisionsRouter,
+  scholarshipsRouter,
+  scholarshipApplicationsRouter,
+  alumniRouter,
+  auditLogsRouter,
+  systemSettingsRouter,
+} from "./routers";
 
 export const appRouter = {
-	healthCheck: publicProcedure.handler(() => {
-		return "OK";
-	}),
-	privateData: protectedProcedure.handler(({ context }) => {
-		return {
-			message: "This is private",
-			user: context.session?.user,
-		};
-	}),
+  healthCheck: publicProcedure.handler(() => {
+    return "OK";
+  }),
+  privateData: protectedProcedure.handler(({ context }) => {
+    return {
+      message: "This is private",
+      user: context.session?.user,
+    };
+  }),
+  users: usersRouter,
+  faculties: facultiesRouter,
+  departments: departmentsRouter,
+  programmes: programmesRouter,
+  courses: coursesRouter,
+  courseAllocation: courseAllocationRouter,
+  courseRegistrations: courseRegistrationsRouter,
+  results: resultsRouter,
+  academicSessions: academicSessionsRouter,
+  feeStructures: feeStructuresRouter,
+  payments: paymentsRouter,
+  attendance: attendanceRouter,
+  hostels: hostelsRouter,
+  hostelRooms: hostelRoomsRouter,
+  hostelAllocations: hostelAllocationsRouter,
+  announcements: announcementsRouter,
+  notifications: notificationsRouter,
+  clearances: clearancesRouter,
+  documents: documentsRouter,
+  examinations: examinationsRouter,
+  examCards: examCardsRouter,
+  transcripts: transcriptsRouter,
+  certificates: certificatesRouter,
+  petitions: petitionsRouter,
+  senateDecisions: senateDecisionsRouter,
+  scholarships: scholarshipsRouter,
+  scholarshipApplications: scholarshipApplicationsRouter,
+  alumni: alumniRouter,
+  auditLogs: auditLogsRouter,
+  systemSettings: systemSettingsRouter,
 };
+
 export type AppRouter = typeof appRouter;
 export type AppRouterClient = RouterClient<typeof appRouter>;
