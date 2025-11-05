@@ -7,7 +7,6 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import Header from "../components/header";
-//@ts-expect-error
 import appCss from "../index.css?url";
 import type { QueryClient } from "@tanstack/react-query";
 
@@ -31,7 +30,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "My App",
+        title: "e-portal",
       },
     ],
     links: [
