@@ -22,7 +22,7 @@ const paymentSchema = z.object({
   studentId: z.string().uuid(),
   sessionId: z.string().uuid(),
   referenceNumber: z.string().min(1),
-  amount: z.number().min(0),
+  amount: z.string(),
   paymentType: z.enum([
     "School Fees",
     "Acceptance Fee",
@@ -70,7 +70,7 @@ export const PaymentForm = ({ mode, payment, onSubmit }: PaymentFormProps) => {
       studentId: "",
       sessionId: "",
       referenceNumber: "",
-      amount: 0,
+      amount: "0",
       paymentType: "School Fees" as
         | "School Fees"
         | "Acceptance Fee"
@@ -168,7 +168,7 @@ export const PaymentForm = ({ mode, payment, onSubmit }: PaymentFormProps) => {
                   <Input
                     type="number"
                     value={field.state.value}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onChange={(e) => field.handleChange(e.target.value)}
                   />
                 </div>
               )}

@@ -136,6 +136,7 @@ export const usersRouter = {
   create: protectedProcedure
     .input(
       z.object({
+        name: z.string(),
         email: z.string().email(),
         password: z.string().min(8),
         confirmPassword: z.string(),
@@ -168,7 +169,7 @@ export const usersRouter = {
         facultyId: z.string().uuid().optional(),
         departmentId: z.string().uuid().optional(),
         programmeId: z.string().uuid().optional(),
-        cgpa: z.number().optional(),
+        cgpa: z.string(),
         totalCreditsEarned: z.number().default(0),
         staffId: z.string().optional(),
         designation: z.string().optional(),
@@ -222,7 +223,7 @@ export const usersRouter = {
         facultyId: z.string().optional(),
         departmentId: z.string().optional(),
         programmeId: z.string().optional(),
-        cgpa: z.number().optional(),
+        cgpa: z.string().optional(),
         totalCreditsEarned: z.number().optional(),
         staffId: z.string().optional(),
         designation: z.string().optional(),
@@ -821,42 +822,18 @@ export const academicSessionsRouter = {
     .input(
       z.object({
         sessionName: z.string().max(50),
-        startDate: z.string().transform((val) => new Date(val)),
-        endDate: z.string().transform((val) => new Date(val)),
+        startDate: z.string(),
+        endDate: z.string(),
         isCurrent: z.boolean().default(false),
         isActive: z.boolean().default(true),
-        firstSemesterStart: z
-          .string()
-          .transform((val) => new Date(val))
-          .optional(),
-        firstSemesterEnd: z
-          .string()
-          .transform((val) => new Date(val))
-          .optional(),
-        secondSemesterStart: z
-          .string()
-          .transform((val) => new Date(val))
-          .optional(),
-        secondSemesterEnd: z
-          .string()
-          .transform((val) => new Date(val))
-          .optional(),
-        courseRegStartFirst: z
-          .string()
-          .transform((val) => new Date(val))
-          .optional(),
-        courseRegEndFirst: z
-          .string()
-          .transform((val) => new Date(val))
-          .optional(),
-        courseRegStartSecond: z
-          .string()
-          .transform((val) => new Date(val))
-          .optional(),
-        courseRegEndSecond: z
-          .string()
-          .transform((val) => new Date(val))
-          .optional(),
+        firstSemesterStart: z.string().optional(),
+        firstSemesterEnd: z.string().optional(),
+        secondSemesterStart: z.string().optional(),
+        secondSemesterEnd: z.string().optional(),
+        courseRegStartFirst: z.string().optional(),
+        courseRegEndFirst: z.string().optional(),
+        courseRegStartSecond: z.string().optional(),
+        courseRegEndSecond: z.string().optional(),
       })
     )
     .handler(async ({ input }) => {
@@ -909,17 +886,17 @@ export const feeStructuresRouter = {
         programmeId: z.string().uuid(),
         level: z.number(),
         studyMode: z.string().max(50),
-        tuitionFee: z.number(),
-        developmentLevy: z.number().optional(),
-        libraryFee: z.number().optional(),
-        sportsFee: z.number().optional(),
-        medicalFee: z.number().optional(),
-        examFee: z.number().optional(),
-        technologyFee: z.number().optional(),
-        departmentalDues: z.number().optional(),
-        facultyDues: z.number().optional(),
+        tuitionFee: z.string(),
+        developmentLevy: z.string().optional(),
+        libraryFee: z.string().optional(),
+        sportsFee: z.string().optional(),
+        medicalFee: z.string().optional(),
+        examFee: z.string().optional(),
+        technologyFee: z.string().optional(),
+        departmentalDues: z.string().optional(),
+        facultyDues: z.string().optional(),
         otherCharges: z.any().default({}),
-        totalAmount: z.number(),
+        totalAmount: z.string(),
         isActive: z.boolean().default(true),
       })
     )
@@ -934,17 +911,17 @@ export const feeStructuresRouter = {
         programmeId: z.string().uuid().optional(),
         level: z.number().optional(),
         studyMode: z.string().max(50).optional(),
-        tuitionFee: z.number().optional(),
-        developmentLevy: z.number().optional(),
-        libraryFee: z.number().optional(),
-        sportsFee: z.number().optional(),
-        medicalFee: z.number().optional(),
-        examFee: z.number().optional(),
-        technologyFee: z.number().optional(),
-        departmentalDues: z.number().optional(),
-        facultyDues: z.number().optional(),
+        tuitionFee: z.string().optional(),
+        developmentLevy: z.string().optional(),
+        libraryFee: z.string().optional(),
+        sportsFee: z.string().optional(),
+        medicalFee: z.string().optional(),
+        examFee: z.string().optional(),
+        technologyFee: z.string().optional(),
+        departmentalDues: z.string().optional(),
+        facultyDues: z.string().optional(),
         otherCharges: z.any().optional(),
-        totalAmount: z.number().optional(),
+        totalAmount: z.string().optional(),
         isActive: z.boolean().optional(),
       })
     )
@@ -1026,7 +1003,7 @@ export const paymentsRouter = {
         studentId: z.string(),
         sessionId: z.string(),
         referenceNumber: z.string().max(100),
-        amount: z.number(),
+        amount: z.string(),
         paymentType: z.string().max(50),
         paymentMethod: z.string().max(50),
         paymentChannel: z.string().max(100).optional(),
@@ -1101,7 +1078,7 @@ export const attendanceRouter = {
         courseId: z.string().uuid(),
         sessionId: z.string().uuid(),
         semester: z.string().max(20),
-        attendanceDate: z.date(),
+        attendanceDate: z.string(),
         status: z.string().max(20),
         markedBy: z.string().uuid(),
         remarks: z.string().optional(),
@@ -1118,7 +1095,7 @@ export const attendanceRouter = {
         courseId: z.string().uuid().optional(),
         sessionId: z.string().uuid().optional(),
         semester: z.string().max(20).optional(),
-        attendanceDate: z.date().optional(),
+        attendanceDate: z.string().optional(),
         status: z.string().max(20).optional(),
         markedBy: z.string().uuid().optional(),
         remarks: z.string().optional(),
@@ -1270,8 +1247,8 @@ export const hostelAllocationsRouter = {
         hostelId: z.string().uuid(),
         roomId: z.string().uuid(),
         sessionId: z.string().uuid(),
-        allocationDate: z.date(),
-        expiryDate: z.date().optional(),
+        allocationDate: z.string(),
+        expiryDate: z.string().optional(),
         bedSpace: z.string().max(20).optional(),
         status: z.string().max(50).default("Active"),
         approvedBy: z.string().uuid().optional(),
@@ -1289,8 +1266,8 @@ export const hostelAllocationsRouter = {
         hostelId: z.string().uuid().optional(),
         roomId: z.string().uuid().optional(),
         sessionId: z.string().uuid().optional(),
-        allocationDate: z.date().optional(),
-        expiryDate: z.date().optional(),
+        allocationDate: z.string().optional(),
+        expiryDate: z.string().optional(),
         bedSpace: z.string().max(20).optional(),
         status: z.string().max(50).optional(),
         approvedBy: z.string().uuid().optional(),
@@ -1505,7 +1482,7 @@ export const documentsRouter = {
         verifiedAt: z.date().optional(),
         verificationStatus: z.string().max(50).default("Pending"),
         rejectionReason: z.string().optional(),
-        expiryDate: z.date().optional(),
+        expiryDate: z.string().optional(),
         metadata: z.any().default({}),
       })
     )
@@ -1527,7 +1504,7 @@ export const documentsRouter = {
         verifiedAt: z.date().optional(),
         verificationStatus: z.string().max(50).optional(),
         rejectionReason: z.string().optional(),
-        expiryDate: z.date().optional(),
+        expiryDate: z.string().optional(),
         metadata: z.any().optional(),
       })
     )
@@ -1565,13 +1542,13 @@ export const examinationsRouter = {
         courseId: z.string().uuid(),
         sessionId: z.string().uuid(),
         semester: z.string().max(20),
-        examDate: z.date(),
+        examDate: z.string(),
         startTime: z.string().max(10),
         endTime: z.string().max(10),
         duration: z.number(),
         venue: z.string().max(200),
         examType: z.string().max(50),
-        maxScore: z.number(),
+        maxScore: z.string(),
         instructions: z.string().optional(),
         invigilators: z.any().default([]),
         isActive: z.boolean().default(true),
@@ -1587,13 +1564,13 @@ export const examinationsRouter = {
         courseId: z.string().uuid().optional(),
         sessionId: z.string().uuid().optional(),
         semester: z.string().max(20).optional(),
-        examDate: z.date().optional(),
+        examDate: z.string().optional(),
         startTime: z.string().max(10).optional(),
         endTime: z.string().max(10).optional(),
         duration: z.number().optional(),
         venue: z.string().max(200).optional(),
         examType: z.string().max(50).optional(),
-        maxScore: z.number().optional(),
+        maxScore: z.string().optional(),
         instructions: z.string().optional(),
         invigilators: z.any().optional(),
         isActive: z.boolean().optional(),
@@ -1634,8 +1611,8 @@ export const examCardsRouter = {
         sessionId: z.string().uuid(),
         semester: z.string().max(20),
         cardNumber: z.string().max(50),
-        issuedDate: z.date(),
-        expiryDate: z.date(),
+        issuedDate: z.string(),
+        expiryDate: z.string(),
         status: z.string().max(50).default("Active"),
         issuedBy: z.string().uuid(),
         qrCode: z.string().optional(),
@@ -1652,8 +1629,8 @@ export const examCardsRouter = {
         sessionId: z.string().uuid().optional(),
         semester: z.string().max(20).optional(),
         cardNumber: z.string().max(50).optional(),
-        issuedDate: z.date().optional(),
-        expiryDate: z.date().optional(),
+        issuedDate: z.string().optional(),
+        expiryDate: z.string().optional(),
         status: z.string().max(50).optional(),
         issuedBy: z.string().uuid().optional(),
         qrCode: z.string().optional(),
@@ -1692,7 +1669,7 @@ export const transcriptsRouter = {
       z.object({
         studentId: z.string().uuid(),
         transcriptNumber: z.string().max(100),
-        requestDate: z.date(),
+        requestDate: z.string(),
         purpose: z.string().optional(),
         destinationAddress: z.string().optional(),
         status: z.string().max(50).default("Pending"),
@@ -1701,10 +1678,10 @@ export const transcriptsRouter = {
         verifiedBy: z.string().uuid().optional(),
         verifiedAt: z.date().optional(),
         collectedBy: z.string().max(255).optional(),
-        collectionDate: z.date().optional(),
+        collectionDate: z.string().optional(),
         collectorIdType: z.string().max(50).optional(),
         collectorIdNumber: z.string().max(100).optional(),
-        feeAmount: z.number().optional(),
+        feeAmount: z.string().optional(),
         feePaid: z.boolean().default(false),
         paymentId: z.string().uuid().optional(),
         remarks: z.string().optional(),
@@ -1720,7 +1697,7 @@ export const transcriptsRouter = {
         id: z.string().uuid(),
         studentId: z.string().uuid().optional(),
         transcriptNumber: z.string().max(100).optional(),
-        requestDate: z.date().optional(),
+        requestDate: z.string().optional(),
         purpose: z.string().optional(),
         destinationAddress: z.string().optional(),
         status: z.string().max(50).optional(),
@@ -1729,10 +1706,10 @@ export const transcriptsRouter = {
         verifiedBy: z.string().uuid().optional(),
         verifiedAt: z.date().optional(),
         collectedBy: z.string().max(255).optional(),
-        collectionDate: z.date().optional(),
+        collectionDate: z.string().optional(),
         collectorIdType: z.string().max(50).optional(),
         collectorIdNumber: z.string().max(100).optional(),
-        feeAmount: z.number().optional(),
+        feeAmount: z.string().optional(),
         feePaid: z.boolean().optional(),
         paymentId: z.string().uuid().optional(),
         remarks: z.string().optional(),
@@ -1775,9 +1752,9 @@ export const certificatesRouter = {
         certificateNumber: z.string().max(100),
         programmeId: z.string().uuid(),
         degreeClass: z.string().max(50).optional(),
-        cgpa: z.number(),
-        graduationDate: z.date().optional(),
-        issuedDate: z.date().optional(),
+        cgpa: z.string(),
+        graduationDate: z.string().optional(),
+        issuedDate: z.string().optional(),
         issuedBy: z.string().uuid().optional(),
         status: z.string().max(50).default("Pending"),
         verificationCode: z.string().max(100).optional(),
@@ -1798,9 +1775,9 @@ export const certificatesRouter = {
         certificateNumber: z.string().max(100).optional(),
         programmeId: z.string().uuid().optional(),
         degreeClass: z.string().max(50).optional(),
-        cgpa: z.number().optional(),
-        graduationDate: z.date().optional(),
-        issuedDate: z.date().optional(),
+        cgpa: z.string().optional(),
+        graduationDate: z.string().optional(),
+        issuedDate: z.string().optional(),
         issuedBy: z.string().uuid().optional(),
         status: z.string().max(50).optional(),
         verificationCode: z.string().max(100).optional(),
@@ -1928,7 +1905,7 @@ export const senateDecisionsRouter = {
   create: protectedProcedure
     .input(
       z.object({
-        meetingDate: z.date(),
+        meetingDate: z.string(),
         decisionNumber: z.string().max(100),
         title: z.string().max(255),
         description: z.string(),
@@ -1936,7 +1913,7 @@ export const senateDecisionsRouter = {
         affectedStudents: z.any().default([]),
         affectedDepartments: z.any().default([]),
         status: z.string().max(50).default("Active"),
-        effectiveDate: z.date().optional(),
+        effectiveDate: z.string().optional(),
         documentUrl: z.string().optional(),
       })
     )
@@ -1947,7 +1924,7 @@ export const senateDecisionsRouter = {
     .input(
       z.object({
         id: z.string().uuid(),
-        meetingDate: z.date().optional(),
+        meetingDate: z.string().optional(),
         decisionNumber: z.string().max(100).optional(),
         title: z.string().max(255).optional(),
         description: z.string().optional(),
@@ -1955,7 +1932,7 @@ export const senateDecisionsRouter = {
         affectedStudents: z.any().optional(),
         affectedDepartments: z.any().optional(),
         status: z.string().max(50).optional(),
-        effectiveDate: z.date().optional(),
+        effectiveDate: z.string().optional(),
         documentUrl: z.string().optional(),
       })
     )
@@ -1995,16 +1972,16 @@ export const scholarshipsRouter = {
         name: z.string().max(255),
         description: z.string().optional(),
         sponsor: z.string().max(255).optional(),
-        amount: z.number(),
+        amount: z.string(),
         scholarshipType: z.string().max(100).optional(),
-        minCgpa: z.number().optional(),
+        minCgpa: z.string().optional(),
         eligibleLevels: z.any().default([]),
         eligibleDepartments: z.any().default([]),
         sessionId: z.string().uuid(),
         numberOfSlots: z.number().optional(),
         availableSlots: z.number().optional(),
-        applicationStartDate: z.date().optional(),
-        applicationEndDate: z.date().optional(),
+        applicationStartDate: z.string().optional(),
+        applicationEndDate: z.string().optional(),
         status: z.string().max(50).default("Active"),
       })
     )
@@ -2018,16 +1995,16 @@ export const scholarshipsRouter = {
         name: z.string().max(255).optional(),
         description: z.string().optional(),
         sponsor: z.string().max(255).optional(),
-        amount: z.number().optional(),
+        amount: z.string().optional(),
         scholarshipType: z.string().max(100).optional(),
-        minCgpa: z.number().optional(),
+        minCgpa: z.string().optional(),
         eligibleLevels: z.any().optional(),
         eligibleDepartments: z.any().optional(),
         sessionId: z.string().uuid().optional(),
         numberOfSlots: z.number().optional(),
         availableSlots: z.number().optional(),
-        applicationStartDate: z.date().optional(),
-        applicationEndDate: z.date().optional(),
+        applicationStartDate: z.string().optional(),
+        applicationEndDate: z.string().optional(),
         status: z.string().max(50).optional(),
       })
     )
@@ -2064,7 +2041,7 @@ export const scholarshipApplicationsRouter = {
       z.object({
         scholarshipId: z.string().uuid(),
         studentId: z.string().uuid(),
-        applicationDate: z.date(),
+        applicationDate: z.string(),
         statement: z.string().optional(),
         supportingDocuments: z.any().default([]),
         status: z.string().max(50).default("Pending"),
@@ -2084,7 +2061,7 @@ export const scholarshipApplicationsRouter = {
         id: z.string().uuid(),
         scholarshipId: z.string().uuid().optional(),
         studentId: z.string().uuid().optional(),
-        applicationDate: z.date().optional(),
+        applicationDate: z.string().optional(),
         statement: z.string().optional(),
         supportingDocuments: z.any().optional(),
         status: z.string().max(50).optional(),
@@ -2132,7 +2109,7 @@ export const alumniRouter = {
         graduationYear: z.number(),
         degreeObtained: z.string().max(100),
         degreeClass: z.string().max(50).optional(),
-        finalCgpa: z.number().optional(),
+        finalCgpa: z.string().optional(),
         currentEmployer: z.string().max(255).optional(),
         currentPosition: z.string().max(255).optional(),
         industry: z.string().max(100).optional(),
@@ -2155,7 +2132,7 @@ export const alumniRouter = {
         graduationYear: z.number().optional(),
         degreeObtained: z.string().max(100).optional(),
         degreeClass: z.string().max(50).optional(),
-        finalCgpa: z.number().optional(),
+        finalCgpa: z.string().optional(),
         currentEmployer: z.string().max(255).optional(),
         currentPosition: z.string().max(255).optional(),
         industry: z.string().max(100).optional(),
