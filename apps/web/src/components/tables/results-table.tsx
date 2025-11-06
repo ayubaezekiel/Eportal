@@ -37,17 +37,16 @@ import {
 } from "../ui/table";
 import { View } from "../view";
 
-export function ResultsTable({ userType }: { userType: "all" | "student" }) {
+export function ResultsTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [selectedResult, setSelectedResult] = useState<any>(null);
-  const [editingResult, setEditingResult] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const { data: user } = useUser();
+  const userType = user?.data?.user.userType === "student";
 
   const { data, isPending, refetch } = useQuery(
-    userType === "student"
+    userType
       ? orpc.results.getByStudent.queryOptions({
           input: { studentId: `${user?.data?.user.id}` },
         })
@@ -197,73 +196,57 @@ export function ResultsTable({ userType }: { userType: "all" | "student" }) {
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogTrigger>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => {
-                  setSelectedResult(row.original);
-                  setIsViewDialogOpen(true);
-                }}
-              >
-                <Eye className="h-4 w-4" />
+            <DialogTrigger asChild>
+              <Button variant="outline" size="icon-sm">
+                <Edit className="h-4 w-4" />
               </Button>
             </DialogTrigger>
 
             <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-              {editingResult && (
-                <ResultForm
-                  mode="update"
-                  result={{
-                    id: editingResult?.results?.id,
-                    studentId: editingResult?.results?.studentId,
-                    courseId: editingResult?.results?.courseId,
-                    sessionId: editingResult?.results?.sessionId,
-                    semester: editingResult?.results?.semester,
-                    attendance: editingResult?.results?.attendance || "0",
-                    assignment: editingResult?.results?.assignment || "0",
-                    test1: editingResult?.results?.test1 || "0",
-                    test2: editingResult?.results?.test2 || "0",
-                    practical: editingResult?.results?.practical || "0",
-                    caTotal: editingResult?.results?.caTotal || "0",
-                    examScore: editingResult?.results?.examScore || "0",
-                    totalScore: editingResult?.results?.totalScore || "0",
-                    grade: editingResult?.results?.grade || "",
-                    gradePoint: editingResult?.results?.gradePoint || "0",
-                    remark: editingResult?.results?.remark || "",
-                    status: editingResult?.results?.status || "Draft",
-                    isCarryOver: editingResult?.results?.isCarryOver || false,
-                    attemptNumber: editingResult?.results?.attemptNumber || 1,
-                    uploadedBy: editingResult?.results?.uploadedBy,
-                    uploadedAt: editingResult?.results?.uploadedAt,
-                    verifiedBy: editingResult?.results?.verifiedBy,
-                    verifiedAt: editingResult?.results?.verifiedAt,
-                    approvedBy: editingResult?.results?.approvedBy,
-                    approvedAt: editingResult?.results?.approvedAt,
-                  }}
-                />
-              )}
+              <ResultForm
+                mode="update"
+                result={{
+                  id: row.original?.results?.id,
+                  studentId: row.original?.results?.studentId as string,
+                  courseId: row.original?.results?.courseId as string,
+                  sessionId: row.original?.results?.sessionId as string,
+                  semester: row.original?.results?.semester as string,
+                  attendance: row.original?.results?.attendance || "0",
+                  assignment: row.original?.results?.assignment || "0",
+                  test1: row.original?.results?.test1 || "0",
+                  test2: row.original?.results?.test2 || "0",
+                  practical: row.original?.results?.practical || "0",
+                  caTotal: row.original?.results?.caTotal || "0",
+                  examScore: row.original?.results?.examScore || "0",
+                  totalScore: row.original?.results?.totalScore || "0",
+                  grade: row.original?.results?.grade || "",
+                  gradePoint: row.original?.results?.gradePoint || "0",
+                  remark: row.original?.results?.remark || "",
+                  status: row.original?.results?.status || "Draft",
+                  isCarryOver: row.original?.results?.isCarryOver || false,
+                  attemptNumber: row.original?.results?.attemptNumber || 1,
+                  uploadedBy: row.original?.results?.uploadedBy as string,
+                  uploadedAt: new Date(`${row.original?.results?.uploadedAt}`),
+                  verifiedBy: row.original?.results?.verifiedBy as string,
+                  verifiedAt: new Date(`${row.original?.results?.verifiedAt}`),
+                  approvedBy: row.original?.results?.approvedBy as string,
+                  approvedAt: new Date(`${row.original?.results?.approvedAt}`),
+                }}
+              />
             </DialogContent>
           </Dialog>
 
           <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-            <DialogTrigger>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => {
-                  setEditingResult(row.original);
-                  setIsEditDialogOpen(true);
-                }}
-              >
-                <Edit className="h-4 w-4" />
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon-sm">
+                <Eye className="h-4 w-4" />
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Result Details</DialogTitle>
               </DialogHeader>
-              {selectedResult && <ResultDetails result={selectedResult} />}
+              <ResultDetails result={row.original} />
             </DialogContent>
           </Dialog>
 

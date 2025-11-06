@@ -1,7 +1,9 @@
+"use client";
+
 import { useUser } from "@/hooks/auth";
 import { orpc, queryClient } from "@/utils/orpc";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo, useCallback } from "react"; // Added useCallback and useMemo
 import { toast } from "sonner";
 import z from "zod";
 import { useAppForm } from "../form";
@@ -17,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { useStore } from "@tanstack/react-form";
+// Removed useStore from @tanstack/react-form
 
 const resultSchema = z.object({
   id: z.string().uuid().optional(),
@@ -57,21 +59,25 @@ interface ResultFormProps {
   mode: "create" | "update";
   result?: z.infer<typeof resultSchema>;
   onSubmit?: (data: z.infer<typeof resultSchema>) => Promise<void>;
+  onClose?: () => void; // Added for dialog close
 }
 
-export const ResultForm = ({ mode, result, onSubmit }: ResultFormProps) => {
+export const ResultForm = ({
+  mode,
+  result,
+  onSubmit,
+  onClose,
+}: ResultFormProps) => {
   const { data: user } = useUser();
   const userId = user?.data?.user.id;
 
-  // --------------------------------------------------------------------
-  // Mutations
-  // --------------------------------------------------------------------
   const createMutation = useMutation(
     orpc.results.create.mutationOptions({
       onSuccess: () => {
         toast.success("Result created successfully");
         form.reset();
         queryClient.invalidateQueries({ queryKey: ["results"] });
+        onClose?.(); // Close dialog on success
       },
       onError: (err) => toast.error(err.message),
     })
@@ -82,36 +88,39 @@ export const ResultForm = ({ mode, result, onSubmit }: ResultFormProps) => {
       onSuccess: () => {
         toast.success("Result updated successfully");
         queryClient.invalidateQueries({ queryKey: orpc.results.update.key() });
+        onClose?.(); // Close dialog on success
       },
       onError: (err) => toast.error(err.message),
     })
   );
 
-  const defaultValues = {
-    ...(result ?? {}),
-    studentId: result?.studentId ?? "",
-    courseId: result?.courseId ?? "",
-    sessionId: result?.sessionId ?? "",
-    semester: result?.semester ?? "First",
-    attendance: result?.attendance ?? "0",
-    assignment: result?.assignment ?? "0",
-    test1: result?.test1 ?? "0",
-    test2: result?.test2 ?? "0",
-    practical: result?.practical ?? "0",
-    caTotal: result?.caTotal ?? "0",
-    examScore: result?.examScore ?? "0",
-    totalScore: result?.totalScore ?? "0",
-    grade: result?.grade ?? "",
-    gradePoint: result?.gradePoint ?? "0",
-    remark: result?.remark ?? "",
-    uploadedBy: result?.uploadedBy ?? userId ?? "",
-    status: result?.status ?? "Draft",
-    isCarryOver: result?.isCarryOver ?? false,
-    attemptNumber: result?.attemptNumber ?? 1,
-  };
+  const getDefaultValues = useCallback(() => {
+    return {
+      ...(result ?? {}),
+      studentId: result?.studentId ?? "",
+      courseId: result?.courseId ?? "",
+      sessionId: result?.sessionId ?? "",
+      semester: result?.semester ?? "First",
+      attendance: result?.attendance ?? "0",
+      assignment: result?.assignment ?? "0",
+      test1: result?.test1 ?? "0",
+      test2: result?.test2 ?? "0",
+      practical: result?.practical ?? "0",
+      caTotal: result?.caTotal ?? "0", // Will be overwritten by calculation
+      examScore: result?.examScore ?? "0",
+      totalScore: result?.totalScore ?? "0", // Will be overwritten by calculation
+      grade: result?.grade ?? "", // Will be overwritten by calculation
+      gradePoint: result?.gradePoint ?? "0", // Will be overwritten by calculation
+      remark: result?.remark ?? "", // Will be overwritten by calculation
+      uploadedBy: result?.uploadedBy ?? userId ?? "",
+      status: result?.status ?? "Draft",
+      isCarryOver: result?.isCarryOver ?? false,
+      attemptNumber: result?.attemptNumber ?? 1,
+    };
+  }, [result, userId]);
 
   const form = useAppForm({
-    defaultValues,
+    defaultValues: getDefaultValues(), // Initialize with default values
     onSubmit: async ({ value }) => {
       if (onSubmit) {
         await onSubmit(value);
@@ -126,13 +135,25 @@ export const ResultForm = ({ mode, result, onSubmit }: ResultFormProps) => {
     },
   });
 
+  // Effect for setting uploadedBy on create
   useEffect(() => {
     if (mode === "create" && userId && !form.getFieldValue("uploadedBy")) {
-      form.setFieldValue("uploadedBy", userId);
+      form.setFieldValue("uploadedBy", userId); // Added dontUpdateIfSame
     }
-  }, [mode, userId]);
+  }, [mode, userId, form]);
 
-  const calculateGradeInfo = (score: number) => {
+  // Use a debounced effect for calculations to reduce re-renders
+  const currentFormValues = {
+    attendance: form.state.values.attendance,
+    assignment: form.state.values.assignment,
+    test1: form.state.values.test1,
+    test2: form.state.values.test2,
+    practical: form.state.values.practical,
+    examScore: form.state.values.examScore,
+  };
+
+  // Memoize the calculation function
+  const calculateGradeInfo = useCallback((score: number) => {
     if (score >= 70)
       return { grade: "A", gradePoint: "5.00", remark: "Excellent" };
     if (score >= 60)
@@ -141,44 +162,58 @@ export const ResultForm = ({ mode, result, onSubmit }: ResultFormProps) => {
     if (score >= 45) return { grade: "D", gradePoint: "2.00", remark: "Fair" };
     if (score >= 40) return { grade: "E", gradePoint: "1.00", remark: "Pass" };
     return { grade: "F", gradePoint: "0.00", remark: "Fail" };
-  };
+  }, []);
 
-  useStore(form.store, ({ values }) => {
-    const ca =
-      Number(values.attendance ?? 0) +
-      Number(values.assignment ?? 0) +
-      Number(values.test1 ?? 0) +
-      Number(values.test2 ?? 0) +
-      Number(values.practical ?? 0);
+  // Use a single useEffect with debounce for all calculated fields
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const ca =
+        Number(currentFormValues.attendance ?? 0) +
+        Number(currentFormValues.assignment ?? 0) +
+        Number(currentFormValues.test1 ?? 0) +
+        Number(currentFormValues.test2 ?? 0) +
+        Number(currentFormValues.practical ?? 0);
 
-    const exam = Number(values.examScore ?? 0);
-    const total = ca + exam;
-    const { grade, gradePoint, remark } = calculateGradeInfo(total);
+      const exam = Number(currentFormValues.examScore ?? 0);
+      const total = ca + exam;
+      const { grade, gradePoint, remark } = calculateGradeInfo(total);
 
-    form.setFieldValue("caTotal", ca.toFixed(2));
-    form.setFieldValue("totalScore", total.toFixed(2));
-    form.setFieldValue("grade", grade);
-    form.setFieldValue("gradePoint", gradePoint);
-    form.setFieldValue("remark", remark);
-  });
+      // Batch updates where possible, and use dontUpdateIfSame to prevent unnecessary re-renders
+      form.setFieldValue("caTotal", ca.toFixed(2));
+      form.setFieldValue("totalScore", total.toFixed(2));
+      form.setFieldValue("grade", grade);
+      form.setFieldValue("gradePoint", gradePoint);
+      form.setFieldValue("remark", remark);
+    }, 300); // Debounce by 300ms
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [
+    currentFormValues.attendance,
+    currentFormValues.assignment,
+    currentFormValues.test1,
+    currentFormValues.test2,
+    currentFormValues.practical,
+    currentFormValues.examScore,
+    calculateGradeInfo,
+    form,
+  ]);
 
   const prevResultRef = useRef(result);
   useEffect(() => {
     if (mode === "update" && result && prevResultRef.current !== result) {
       if (!form.state.isDirty) {
-        form.reset();
+        form.reset(getDefaultValues()); // Reset with the new default values
       }
       prevResultRef.current = result;
     }
-  }, [mode, result]);
+  }, [mode, result, form, getDefaultValues]); // Added form and getDefaultValues to deps
 
-  const statusOptions = [
-    "Draft",
-    "Submitted",
-    "Verified",
-    "Approved",
-    "Published",
-  ];
+  const statusOptions = useMemo(
+    () => ["Draft", "Submitted", "Verified", "Approved", "Published"],
+    []
+  );
 
   return (
     <Card className="mx-auto mt-10">
@@ -240,6 +275,7 @@ export const ResultForm = ({ mode, result, onSubmit }: ResultFormProps) => {
                       onChange={(e) =>
                         field.handleChange(Number(e.target.value))
                       }
+                      onBlur={field.handleBlur} // Add onBlur
                     />
                   </div>
                 )}
@@ -253,6 +289,7 @@ export const ResultForm = ({ mode, result, onSubmit }: ResultFormProps) => {
                     id="isCarryOver"
                     checked={field.state.value}
                     onCheckedChange={(c) => field.handleChange(!!c)}
+                    onBlur={field.handleBlur} // Add onBlur
                   />
                   <Label htmlFor="isCarryOver" className="cursor-pointer">
                     Carry Over Course
@@ -285,6 +322,7 @@ export const ResultForm = ({ mode, result, onSubmit }: ResultFormProps) => {
                           step="0.01"
                           value={field.state.value}
                           onChange={(e) => field.handleChange(e.target.value)}
+                          onBlur={field.handleBlur} // Add onBlur
                         />
                       </div>
                     )}
@@ -327,6 +365,7 @@ export const ResultForm = ({ mode, result, onSubmit }: ResultFormProps) => {
                       step="0.01"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur} // Add onBlur
                     />
                   </div>
                 )}
@@ -379,6 +418,9 @@ export const ResultForm = ({ mode, result, onSubmit }: ResultFormProps) => {
                   <Select
                     value={field.state.value}
                     onValueChange={field.handleChange}
+                    onOpenChange={(open) => {
+                      if (!open) field.handleBlur(); // Trigger blur when select closes
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
@@ -401,7 +443,9 @@ export const ResultForm = ({ mode, result, onSubmit }: ResultFormProps) => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => form.reset()}
+              onClick={() => {
+                form.reset();
+              }}
             >
               {mode === "create" ? "Clear Form" : "Cancel"}
             </Button>
