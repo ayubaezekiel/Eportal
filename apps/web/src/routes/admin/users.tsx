@@ -26,7 +26,7 @@ function UsersPage() {
               Add User
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-200 w-full overflow-auto h-240">
+          <DialogContent className="sm:max-w-200 w-full overflow-auto h-200">
             <UserForm />
           </DialogContent>
         </Dialog>

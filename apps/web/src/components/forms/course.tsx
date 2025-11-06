@@ -1,4 +1,4 @@
-import { orpc } from "@/utils/orpc";
+import { orpc, queryClient } from "@/utils/orpc";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import z from "zod";
@@ -37,8 +37,32 @@ interface CourseFormProps {
 }
 
 export const CourseForm = ({ mode, course, onSubmit }: CourseFormProps) => {
-  const createMutation = useMutation(orpc.courses.create.mutationOptions());
-  const updateMutation = useMutation(orpc.courses.update.mutationOptions());
+  const createMutation = useMutation(
+    orpc.courses.create.mutationOptions({
+      onSuccess: () => {
+        toast.success("Course created successfully");
+        queryClient.invalidateQueries({
+          queryKey: orpc.courses.create.key(),
+        });
+      },
+      onError: (err) => {
+        toast.error(err.message || "An error occurred");
+      },
+    })
+  );
+  const updateMutation = useMutation(
+    orpc.courses.update.mutationOptions({
+      onSuccess: () => {
+        toast.success("Course updated successfully");
+        queryClient.invalidateQueries({
+          queryKey: orpc.courses.update.key(),
+        });
+      },
+      onError: (err) => {
+        toast.error(err.message || "An error occurred");
+      },
+    })
+  );
 
   const form = useAppForm({
     defaultValues: course || {
@@ -56,20 +80,14 @@ export const CourseForm = ({ mode, course, onSubmit }: CourseFormProps) => {
       onChange: courseSchema,
     },
     onSubmit: async ({ value }) => {
-      try {
-        if (onSubmit) {
-          await onSubmit(value);
+      if (onSubmit) {
+        await onSubmit(value);
+      } else {
+        if (mode === "create") {
+          await createMutation.mutateAsync(value);
         } else {
-          if (mode === "create") {
-            await createMutation.mutateAsync(value);
-            toast.success("Course created successfully");
-          } else {
-            await updateMutation.mutateAsync({ id: `${course?.id}`, ...value });
-            toast.success("Course updated successfully");
-          }
+          await updateMutation.mutateAsync({ id: `${course?.id}`, ...value });
         }
-      } catch (error: any) {
-        toast.error(error.message || "An error occurred");
       }
     },
   });

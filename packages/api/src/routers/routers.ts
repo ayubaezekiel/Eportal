@@ -541,6 +541,12 @@ export const courseRegistrationsRouter = {
     return await db
       .select()
       .from(courseRegistrations)
+      .innerJoin(courses, eq(courseRegistrations.courseId, courses.id))
+      .innerJoin(user, eq(courseRegistrations.studentId, user.id))
+      .innerJoin(
+        academicSessions,
+        eq(courseRegistrations.sessionId, academicSessions.id)
+      )
       .orderBy(desc(courseRegistrations.registrationDate));
   }),
 
@@ -550,7 +556,15 @@ export const courseRegistrationsRouter = {
       const [registration] = await db
         .select()
         .from(courseRegistrations)
-        .where(eq(courseRegistrations.id, input.id));
+        .where(eq(courseRegistrations.id, input.id))
+        .innerJoin(courses, eq(courseRegistrations.courseId, courses.id))
+        .innerJoin(user, eq(courseRegistrations.studentId, user.id))
+        .innerJoin(
+          academicSessions,
+          eq(courseRegistrations.sessionId, academicSessions.id)
+        )
+        .orderBy(desc(courseRegistrations.registrationDate));
+
       return registration;
     }),
 
@@ -561,6 +575,12 @@ export const courseRegistrationsRouter = {
         .select()
         .from(courseRegistrations)
         .where(eq(courseRegistrations.studentId, input.studentId))
+        .innerJoin(courses, eq(courseRegistrations.courseId, courses.id))
+        .innerJoin(user, eq(courseRegistrations.studentId, user.id))
+        .innerJoin(
+          academicSessions,
+          eq(courseRegistrations.sessionId, academicSessions.id)
+        )
         .orderBy(desc(courseRegistrations.registrationDate));
     }),
 
@@ -643,7 +663,13 @@ export const courseRegistrationsRouter = {
 // Results Router
 export const resultsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(results).orderBy(desc(results.createdAt));
+    return await db
+      .select()
+      .from(results)
+      .leftJoin(courses, eq(results.courseId, courses.id))
+      .leftJoin(user, eq(results.studentId, user.id))
+      .leftJoin(academicSessions, eq(results.sessionId, academicSessions.id))
+      .orderBy(desc(results.createdAt));
   }),
 
   getById: protectedProcedure
@@ -652,6 +678,9 @@ export const resultsRouter = {
       const [result] = await db
         .select()
         .from(results)
+        .leftJoin(courses, eq(results.courseId, courses.id))
+        .leftJoin(user, eq(results.studentId, user.id))
+        .leftJoin(academicSessions, eq(results.sessionId, academicSessions.id))
         .where(eq(results.id, input.id));
       return result;
     }),
@@ -662,6 +691,9 @@ export const resultsRouter = {
       return await db
         .select()
         .from(results)
+        .leftJoin(courses, eq(results.courseId, courses.id))
+        .leftJoin(user, eq(results.studentId, user.id))
+        .leftJoin(academicSessions, eq(results.sessionId, academicSessions.id))
         .where(eq(results.studentId, input.studentId))
         .orderBy(desc(results.createdAt));
     }),

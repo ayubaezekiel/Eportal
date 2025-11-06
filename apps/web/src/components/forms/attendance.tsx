@@ -1,4 +1,4 @@
-import { orpc } from "@/utils/orpc";
+import { orpc, queryClient } from "@/utils/orpc";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -32,7 +32,7 @@ const attendanceSchema = z.object({
   courseId: z.string().uuid(),
   sessionId: z.string().uuid(),
   semester: z.enum(["First", "Second"]),
-  attendanceDate: z.date(),
+  attendanceDate: z.string(),
   status: z.enum(["Present", "Absent", "Late", "Excused"]),
   markedBy: z.string().uuid(),
   remarks: z.string().optional(),
@@ -68,8 +68,32 @@ export const AttendanceForm = ({
     errors: string[];
   } | null>(null);
 
-  const createMutation = useMutation(orpc.attendance.create.mutationOptions());
-  const updateMutation = useMutation(orpc.attendance.update.mutationOptions());
+  const createMutation = useMutation(
+    orpc.attendance.create.mutationOptions({
+      onSuccess: () => {
+        toast.success("Attendance record created successfully");
+        queryClient.invalidateQueries({
+          queryKey: orpc.attendance.create.key(),
+        });
+      },
+      onError: (err) => {
+        toast.error(err.message || "An error occurred");
+      },
+    })
+  );
+  const updateMutation = useMutation(
+    orpc.attendance.update.mutationOptions({
+      onSuccess: () => {
+        toast.success("Attendance record updated successfully");
+        queryClient.invalidateQueries({
+          queryKey: orpc.attendance.update.key(),
+        });
+      },
+      onError: (err) => {
+        toast.error(err.message || "An error occurred");
+      },
+    })
+  );
   const { data: course, isPending: isCoursePending } = useQuery(
     orpc.courses.getAll.queryOptions()
   );
@@ -87,7 +111,7 @@ export const AttendanceForm = ({
       courseId: "",
       sessionId: "",
       semester: "First" as const,
-      attendanceDate: new Date(),
+      attendanceDate: "",
       status: "Present" as const,
       markedBy: user?.data?.user.id as string,
       remarks: "",
@@ -99,11 +123,10 @@ export const AttendanceForm = ({
         } else {
           if (mode === "create") {
             await createMutation.mutateAsync(value);
-            toast.success("Attendance record created successfully");
+
             form.reset();
           } else {
             await updateMutation.mutateAsync({ ...value, id: `${value.id}` });
-            toast.success("Attendance record updated successfully");
           }
         }
       } catch (error: any) {
@@ -213,7 +236,7 @@ export const AttendanceForm = ({
               courseId: courseItem.id,
               sessionId: session.id,
               semester,
-              attendanceDate,
+              attendanceDate: attendanceDate.toISOString(),
               status,
               markedBy: user?.data?.user.id as string,
               remarks: row.remarks?.trim() || "",
@@ -346,6 +369,7 @@ ST002,CS101,2024/2025,First,2025-01-15,Absent,Medical excuse`;
                       {csvFile.name}
                     </span>
                     <button
+                      title="csv"
                       onClick={() => {
                         setCSVFile(null);
                         setUploadResults(null);
@@ -528,10 +552,8 @@ ST002,CS101,2024/2025,First,2025-01-15,Absent,Medical excuse`;
                   <Label>Date *</Label>
                   <Input
                     type="date"
-                    value={field.state.value?.toISOString().split("T")[0]}
-                    onChange={(e) =>
-                      field.handleChange(new Date(e.target.value))
-                    }
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
                   />
                 </div>
               )}

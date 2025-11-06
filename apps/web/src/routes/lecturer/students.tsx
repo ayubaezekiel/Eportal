@@ -16,7 +16,9 @@ function LecturerStudentsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">My Students</h1>
-          <p className="text-muted-foreground">View and manage students in your courses</p>
+          <p className="text-muted-foreground">
+            View and manage students in your courses
+          </p>
         </div>
         <Dialog>
           <DialogTrigger asChild>
@@ -25,8 +27,8 @@ function LecturerStudentsPage() {
               Add Student
             </Button>
           </DialogTrigger>
-          <DialogContent>
-            <UserForm mode="create" />
+          <DialogContent className="h-180 sm:max-w-240 overflow-auto">
+            <UserForm />
           </DialogContent>
         </Dialog>
       </div>
@@ -36,7 +38,7 @@ function LecturerStudentsPage() {
           <CardTitle>Enrolled Students</CardTitle>
         </CardHeader>
         <CardContent>
-          <UsersTable />
+          <UsersTable userType="student" />
         </CardContent>
       </Card>
     </div>

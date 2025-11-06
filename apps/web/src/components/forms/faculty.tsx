@@ -54,10 +54,13 @@ export const FacultyForm = ({ mode, faculty, onSubmit }: FacultyFormProps) => {
         });
         toast.success("Faculty updated successfully");
       },
+      onError: (err) => {
+        toast.error(err.message || "An error occurred");
+      },
     })
   );
   const { data: deans, isPending: isDeanPending } = useQuery(
-    orpc.users.getAll.queryOptions()
+    orpc.users.getByUserType.queryOptions({ input: { userType: "lecturer" } })
   );
 
   const form = useForm({
@@ -70,21 +73,17 @@ export const FacultyForm = ({ mode, faculty, onSubmit }: FacultyFormProps) => {
       isActive: true,
     },
     onSubmit: async ({ value }) => {
-      try {
-        if (onSubmit) {
-          await onSubmit(value);
+      if (onSubmit) {
+        await onSubmit(value);
+      } else {
+        if (mode === "create") {
+          await createMutation.mutateAsync(value);
         } else {
-          if (mode === "create") {
-            await createMutation.mutateAsync(value);
-          } else {
-            await updateMutation.mutateAsync({
-              id: `${faculty?.id}`,
-              ...value,
-            });
-          }
+          await updateMutation.mutateAsync({
+            id: `${faculty?.id}`,
+            ...value,
+          });
         }
-      } catch (error: any) {
-        toast.error(error.message || "An error occurred");
       }
     },
   });

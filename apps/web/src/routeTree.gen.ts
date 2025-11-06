@@ -18,7 +18,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudentIndexRouteImport } from './routes/student/index'
 import { Route as LecturerIndexRouteImport } from './routes/lecturer/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as StudentResultsRouteImport } from './routes/student/results'
 import { Route as StudentPaymentsRouteImport } from './routes/student/payments'
 import { Route as StudentCoursesRouteImport } from './routes/student/courses'
 import { Route as LecturerStudentsRouteImport } from './routes/lecturer/students'
@@ -34,6 +33,7 @@ import { Route as AdminFeesRouteImport } from './routes/admin/fees'
 import { Route as AdminFacultiesRouteImport } from './routes/admin/faculties'
 import { Route as AdminDepartmentsRouteImport } from './routes/admin/departments'
 import { Route as AdminCoursesRouteImport } from './routes/admin/courses'
+import { Route as StudentResultsIndexRouteImport } from './routes/student/results/index'
 import { Route as ApiRpcSplatRouteImport } from './routes/api/rpc/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -80,11 +80,6 @@ const LecturerIndexRoute = LecturerIndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StudentResultsRoute = StudentResultsRouteImport.update({
-  id: '/student/results',
-  path: '/student/results',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StudentPaymentsRoute = StudentPaymentsRouteImport.update({
@@ -162,6 +157,11 @@ const AdminCoursesRoute = AdminCoursesRouteImport.update({
   path: '/admin/courses',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudentResultsIndexRoute = StudentResultsIndexRouteImport.update({
+  id: '/student/results/',
+  path: '/student/results/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
   id: '/api/rpc/$',
   path: '/api/rpc/$',
@@ -195,12 +195,12 @@ export interface FileRoutesByFullPath {
   '/lecturer/students': typeof LecturerStudentsRoute
   '/student/courses': typeof StudentCoursesRoute
   '/student/payments': typeof StudentPaymentsRoute
-  '/student/results': typeof StudentResultsRoute
   '/admin': typeof AdminIndexRoute
   '/lecturer': typeof LecturerIndexRoute
   '/student': typeof StudentIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/student/results': typeof StudentResultsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -224,12 +224,12 @@ export interface FileRoutesByTo {
   '/lecturer/students': typeof LecturerStudentsRoute
   '/student/courses': typeof StudentCoursesRoute
   '/student/payments': typeof StudentPaymentsRoute
-  '/student/results': typeof StudentResultsRoute
   '/admin': typeof AdminIndexRoute
   '/lecturer': typeof LecturerIndexRoute
   '/student': typeof StudentIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/student/results': typeof StudentResultsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -254,12 +254,12 @@ export interface FileRoutesById {
   '/lecturer/students': typeof LecturerStudentsRoute
   '/student/courses': typeof StudentCoursesRoute
   '/student/payments': typeof StudentPaymentsRoute
-  '/student/results': typeof StudentResultsRoute
   '/admin/': typeof AdminIndexRoute
   '/lecturer/': typeof LecturerIndexRoute
   '/student/': typeof StudentIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/student/results/': typeof StudentResultsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -285,12 +285,12 @@ export interface FileRouteTypes {
     | '/lecturer/students'
     | '/student/courses'
     | '/student/payments'
-    | '/student/results'
     | '/admin'
     | '/lecturer'
     | '/student'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/student/results'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -314,12 +314,12 @@ export interface FileRouteTypes {
     | '/lecturer/students'
     | '/student/courses'
     | '/student/payments'
-    | '/student/results'
     | '/admin'
     | '/lecturer'
     | '/student'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/student/results'
   id:
     | '__root__'
     | '/'
@@ -343,12 +343,12 @@ export interface FileRouteTypes {
     | '/lecturer/students'
     | '/student/courses'
     | '/student/payments'
-    | '/student/results'
     | '/admin/'
     | '/lecturer/'
     | '/student/'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/student/results/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -373,12 +373,12 @@ export interface RootRouteChildren {
   LecturerStudentsRoute: typeof LecturerStudentsRoute
   StudentCoursesRoute: typeof StudentCoursesRoute
   StudentPaymentsRoute: typeof StudentPaymentsRoute
-  StudentResultsRoute: typeof StudentResultsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   LecturerIndexRoute: typeof LecturerIndexRoute
   StudentIndexRoute: typeof StudentIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
+  StudentResultsIndexRoute: typeof StudentResultsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -444,13 +444,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/student/results': {
-      id: '/student/results'
-      path: '/student/results'
-      fullPath: '/student/results'
-      preLoaderRoute: typeof StudentResultsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/student/payments': {
@@ -558,6 +551,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCoursesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/student/results/': {
+      id: '/student/results/'
+      path: '/student/results'
+      fullPath: '/student/results'
+      preLoaderRoute: typeof StudentResultsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/rpc/$': {
       id: '/api/rpc/$'
       path: '/api/rpc/$'
@@ -597,12 +597,12 @@ const rootRouteChildren: RootRouteChildren = {
   LecturerStudentsRoute: LecturerStudentsRoute,
   StudentCoursesRoute: StudentCoursesRoute,
   StudentPaymentsRoute: StudentPaymentsRoute,
-  StudentResultsRoute: StudentResultsRoute,
   AdminIndexRoute: AdminIndexRoute,
   LecturerIndexRoute: LecturerIndexRoute,
   StudentIndexRoute: StudentIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
+  StudentResultsIndexRoute: StudentResultsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CourseRegistrationForStudentForm } from "@/components/forms/course-registration";
+import { StudentCoursesTable } from "@/components/tables/course-registration-table";
 import { Button } from "@/components/ui/button";
-import { CoursesTable } from "@/components/tables";
-import { Plus } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { CourseRegistrationForm } from "@/components/forms";
+import { createFileRoute } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
 
 export const Route = createFileRoute("/student/courses")({
   component: StudentCoursesPage,
@@ -16,7 +16,9 @@ function StudentCoursesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">My Courses</h1>
-          <p className="text-muted-foreground">View and manage your registered courses</p>
+          <p className="text-muted-foreground">
+            View and manage your registered courses
+          </p>
         </div>
         <Dialog>
           <DialogTrigger asChild>
@@ -26,7 +28,7 @@ function StudentCoursesPage() {
             </Button>
           </DialogTrigger>
           <DialogContent>
-            <CourseRegistrationForm mode="create" />
+            <CourseRegistrationForStudentForm mode="create" />
           </DialogContent>
         </Dialog>
       </div>
@@ -36,7 +38,7 @@ function StudentCoursesPage() {
           <CardTitle>Registered Courses</CardTitle>
         </CardHeader>
         <CardContent>
-          <CoursesTable />
+          <StudentCoursesTable />
         </CardContent>
       </Card>
     </div>

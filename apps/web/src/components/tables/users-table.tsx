@@ -631,24 +631,30 @@ function UserDetailsDialog({
   );
 }
 
-export function UsersTable() {
+export function UsersTable({ userType }: { userType: "all" | "student" }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [selectedUser, setSelectedUser] = useState<UserTypes | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { data, isPending, refetch } = useQuery(
+    userType === "student"
+      ? orpc.users.getByUserType.queryOptions({
+          input: { userType: "student" },
+        })
+      : orpc.users.getAll.queryOptions()
+  );
 
   const deleteUser = useMutation(
     orpc.users.delete.mutationOptions({
       onSuccess: () => {
         toast.success("User deleted successsfully");
+        refetch();
       },
       onError: (err) => {
         toast.error(err.message);
       },
     })
   );
-
-  const { data, isPending } = useQuery(orpc.users.getAll.queryOptions());
 
   const columns: ColumnDef<UserTypes>[] = [
     {

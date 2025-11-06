@@ -90,7 +90,7 @@ export const UpdateUserForm = ({ user }: { user: User }) => {
       facultyId: user.facultyId ?? undefined,
       departmentId: user.departmentId ?? undefined,
       programmeId: user.programmeId ?? undefined,
-      cgpa: Number(user.cgpa) ?? 0,
+      cgpa: user.cgpa ?? "0",
       totalCreditsEarned: user.totalCreditsEarned ?? 0,
 
       // ---- staff ----
@@ -148,7 +148,7 @@ export const UpdateUserForm = ({ user }: { user: User }) => {
           facultyId: value.facultyId,
           departmentId: value.departmentId,
           programmeId: value.programmeId,
-          cgpa: Number(value.cgpa),
+          cgpa: value.cgpa,
           totalCreditsEarned: value.totalCreditsEarned,
           isOnProbation: value.isOnProbation,
           probationReason: value.probationReason,
@@ -222,8 +222,8 @@ export const UpdateUserForm = ({ user }: { user: User }) => {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-200 w-full overflow-auto h-240">
-        <Card className="border-0 shadow-none">
+      <DialogContent className="sm:max-w-200 w-full overflow-auto h-200">
+        <Card className="border-0 shadow-none mt-10">
           <CardHeader>
             <CardTitle>Update User</CardTitle>
             <CardDescription>

@@ -1,7 +1,6 @@
-"use client";
-
+import type { AcademicSession } from "@/types/types";
 import { orpc } from "@/utils/orpc";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -13,10 +12,13 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Edit, Trash, Eye } from "lucide-react";
+import { Edit, Eye, Trash } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { AcademicSessionForm } from "../forms";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
 import { Input } from "../ui/input";
 import {
   Table,
@@ -26,17 +28,12 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
-import { toast } from "sonner";
-import type { AcademicSession } from "@/types/types";
-import { AcademicSessionForm } from "../forms";
 
 export function AcademicSessionsTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const queryClient = useQueryClient();
 
-  const { data, isPending } = useQuery(
+  const { data, isPending, refetch } = useQuery(
     orpc.academicSessions.getAll.queryOptions()
   );
 
@@ -44,7 +41,7 @@ export function AcademicSessionsTable() {
     orpc.academicSessions.delete.mutationOptions({
       onSuccess: () => {
         toast.success("Academic session deleted successfully");
-        queryClient.invalidateQueries({ queryKey: ["academicSessions"] });
+        refetch();
       },
       onError: (err) => toast.error(err.message),
     })

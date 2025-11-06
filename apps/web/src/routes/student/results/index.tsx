@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { orpc } from "@/utils/orpc";
 import { useUser } from "@/hooks/auth";
 
-export const Route = createFileRoute("/student/results")({
+export const Route = createFileRoute("/student/results/")({
   component: StudentResultsPage,
 });
 
@@ -16,18 +16,27 @@ function StudentResultsPage() {
   const { data: results } = useQuery(orpc.results.getAll.queryOptions());
 
   const exportResults = () => {
-    const studentResults = results?.filter(r => r.studentId === user?.data?.user?.id) || [];
-    
+    const studentResults =
+      results?.filter((r) => r.results.studentId === user?.data?.user?.id) ||
+      [];
+
     const csvContent = [
-      ['Course', 'Score', 'Grade', 'Date'],
-      ...studentResults.map(r => [r.courseId, r.score, r.grade, new Date(r.createdAt).toLocaleDateString()])
-    ].map(row => row.join(',')).join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+      ["Course", "Score", "Grade", "Date"],
+      ...studentResults.map((r) => [
+        r.results.courseId,
+        r.results.examScore,
+        r.results.grade,
+        new Date(r.results.createdAt).toLocaleDateString(),
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'my-results.csv';
+    a.download = "my-results.csv";
     a.click();
   };
 
@@ -36,7 +45,9 @@ function StudentResultsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">My Results</h1>
-          <p className="text-muted-foreground">View your academic results and grades</p>
+          <p className="text-muted-foreground">
+            View your academic results and grades
+          </p>
         </div>
         <Button onClick={exportResults}>
           <Download className="h-4 w-4 mr-2" />
@@ -49,7 +60,7 @@ function StudentResultsPage() {
           <CardTitle>Academic Results</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResultsTable />
+          <ResultsTable userType="student" />
         </CardContent>
       </Card>
     </div>

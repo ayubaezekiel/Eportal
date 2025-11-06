@@ -1,5 +1,3 @@
-"use client";
-
 import type { Course } from "@/types/types";
 import { orpc } from "@/utils/orpc";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -30,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { View } from "../view";
 
 export function CoursesTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -96,7 +95,14 @@ export function CoursesTable() {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
-              <CourseForm mode="update" course={row.original} />
+              <CourseForm
+                mode="update"
+                course={{
+                  ...row.original,
+                  isActive: Boolean(row.original.isActive),
+                  description: row.original.description as string,
+                }}
+              />
             </DialogContent>
           </Dialog>
           <Button
@@ -139,10 +145,8 @@ export function CoursesTable() {
     },
   });
 
-  if (isPending) return <div>Loading...</div>;
-
   return (
-    <div className="w-full">
+    <View isLoading={isPending} className="w-full">
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter courses..."
@@ -218,6 +222,6 @@ export function CoursesTable() {
           Next
         </Button>
       </div>
-    </div>
+    </View>
   );
 }
