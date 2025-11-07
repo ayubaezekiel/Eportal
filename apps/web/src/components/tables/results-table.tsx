@@ -397,7 +397,7 @@ export function ResultsTable() {
         open={!!viewingResult}
         onOpenChange={(open) => !open && setViewingResult(null)}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-240 h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Result Details</DialogTitle>
           </DialogHeader>
@@ -414,161 +414,238 @@ function ResultDetails({ result }: { result: any }) {
 
   const { results, courses, user, academic_sessions } = result;
 
+  const getGradeVariant = (grade: string) => {
+    if (["A", "B"].includes(grade)) return "default";
+    if (["C", "D", "E"].includes(grade)) return "secondary";
+    return "destructive";
+  };
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "Approved":
+      case "Published":
+        return "default";
+      case "Verified":
+        return "secondary";
+      case "Submitted":
+        return "outline";
+      default:
+        return "destructive";
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Student Info */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">
-            Student Name
-          </Label>
-          <p className="text-base font-semibold">{user?.fullName || "N/A"}</p>
-        </div>
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">
-            Matric Number
-          </Label>
-          <p className="text-base font-semibold">
-            {user?.matricNumber || "N/A"}
-          </p>
-        </div>
-      </div>
+      {/* Student & Course Header */}
+      <div className="bg-linear-to-br from-primary/5 via-accent/5 to-secondary/5 rounded-lg p-6 border border-primary/10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Student Information
+              </Label>
+              <div className="mt-2 space-y-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">Full Name</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    {user?.fullName || "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Matric Number</p>
+                  <p className="text-base font-mono font-medium text-primary">
+                    {user?.matricNumber || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      {/* Course Info */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">
-            Course Code
-          </Label>
-          <p className="text-base">{courses?.courseCode || "N/A"}</p>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Course Information
+              </Label>
+              <div className="mt-2 space-y-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">Course Code</p>
+                  <p className="text-lg font-semibold font-mono text-foreground">
+                    {courses?.courseCode || "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Course Title</p>
+                  <p className="text-base font-medium text-foreground">
+                    {courses?.courseTitle || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">
-            Course Title
-          </Label>
-          <p className="text-base">{courses?.courseTitle || "N/A"}</p>
-        </div>
-      </div>
 
-      {/* Session Info */}
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">
-            Session
-          </Label>
-          <p className="text-base">{academic_sessions?.sessionName || "N/A"}</p>
-        </div>
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">
-            Semester
-          </Label>
-          <p className="text-base">{results?.semester || "N/A"}</p>
-        </div>
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">
-            Credit Units
-          </Label>
-          <p className="text-base">{courses?.creditUnits || "N/A"}</p>
+        {/* Session Details */}
+        <div className="mt-6 pt-4 border-t border-border/50">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                Session
+              </p>
+              <p className="text-sm font-semibold text-foreground">
+                {academic_sessions?.sessionName || "N/A"}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                Semester
+              </p>
+              <p className="text-sm font-semibold text-foreground">
+                {results?.semester || "N/A"}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                Credit Units
+              </p>
+              <p className="text-sm font-semibold text-foreground">
+                {courses?.creditUnits || "N/A"}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* CA Breakdown */}
-      <div>
-        <h4 className="text-sm font-semibold mb-3">
+      <div className="border border-border rounded-lg p-5 bg-card">
+        <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+          <span className="h-1 w-1 rounded-full bg-primary"></span>
           Continuous Assessment Breakdown
         </h4>
-        <div className="grid grid-cols-5 gap-4">
-          <div className="text-center">
-            <Label className="text-xs text-muted-foreground">Attendance</Label>
-            <p className="text-lg font-semibold">
-              {parseFloat(results?.attendance || "0").toFixed(2)}
-            </p>
-          </div>
-          <div className="text-center">
-            <Label className="text-xs text-muted-foreground">Assignment</Label>
-            <p className="text-lg font-semibold">
-              {parseFloat(results?.assignment || "0").toFixed(2)}
-            </p>
-          </div>
-          <div className="text-center">
-            <Label className="text-xs text-muted-foreground">Test 1</Label>
-            <p className="text-lg font-semibold">
-              {parseFloat(results?.test1 || "0").toFixed(2)}
-            </p>
-          </div>
-          <div className="text-center">
-            <Label className="text-xs text-muted-foreground">Test 2</Label>
-            <p className="text-lg font-semibold">
-              {parseFloat(results?.test2 || "0").toFixed(2)}
-            </p>
-          </div>
-          <div className="text-center">
-            <Label className="text-xs text-muted-foreground">Practical</Label>
-            <p className="text-lg font-semibold">
-              {parseFloat(results?.practical || "0").toFixed(2)}
-            </p>
-          </div>
+        <div className="grid grid-cols-5 gap-3">
+          {[
+            { label: "Attendance", value: results?.attendance },
+            { label: "Assignment", value: results?.assignment },
+            { label: "Test 1", value: results?.test1 },
+            { label: "Test 2", value: results?.test2 },
+            { label: "Practical", value: results?.practical },
+          ].map((item, idx) => (
+            <div
+              key={idx}
+              className="bg-muted/50 rounded-md p-3 text-center border border-border/50 hover:border-primary/50 transition-colors"
+            >
+              <Label className="text-xs text-muted-foreground block mb-1">
+                {item.label}
+              </Label>
+              <p className="text-xl font-bold text-foreground">
+                {parseFloat(item.value || "0").toFixed(2)}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Scores */}
-      <div className="grid grid-cols-4 gap-4 p-4 bg-muted rounded-lg">
-        <div className="text-center">
-          <Label className="text-sm text-muted-foreground">CA Total</Label>
-          <p className="text-2xl font-bold">
+      {/* Scores Summary */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+          <Label className="text-xs text-blue-700 dark:text-blue-300 font-medium uppercase tracking-wider block mb-2">
+            CA Total
+          </Label>
+          <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
             {parseFloat(results?.caTotal || "0").toFixed(2)}
           </p>
         </div>
-        <div className="text-center">
-          <Label className="text-sm text-muted-foreground">Exam Score</Label>
-          <p className="text-2xl font-bold">
+
+        <div className="bg-linear-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+          <Label className="text-xs text-purple-700 dark:text-purple-300 font-medium uppercase tracking-wider block mb-2">
+            Exam Score
+          </Label>
+          <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">
             {parseFloat(results?.examScore || "0").toFixed(2)}
           </p>
         </div>
-        <div className="text-center">
-          <Label className="text-sm text-muted-foreground">Total Score</Label>
-          <p className="text-2xl font-bold text-primary">
+
+        <div className="bg-linear-to-br from-primary/10 to-primary/20 rounded-lg p-4 border-2 border-primary">
+          <Label className="text-xs text-primary font-semibold uppercase tracking-wider block mb-2">
+            Total Score
+          </Label>
+          <p className="text-3xl font-bold text-primary">
             {parseFloat(results?.totalScore || "0").toFixed(2)}
           </p>
         </div>
-        <div className="text-center">
-          <Label className="text-sm text-muted-foreground">Grade</Label>
-          <p className="text-2xl font-bold">
-            {results?.grade || "N/A"} (
-            {parseFloat(results?.gradePoint || "0").toFixed(2)})
-          </p>
+
+        <div className="bg-linear-to-br from-accent/10 to-accent/20 rounded-lg p-4 border-2 border-accent">
+          <Label className="text-xs text-accent-foreground font-semibold uppercase tracking-wider block mb-2">
+            Grade
+          </Label>
+          <div className="flex items-baseline gap-2">
+            <Badge
+              variant={getGradeVariant(results?.grade)}
+              className="text-xl font-bold px-3 py-1"
+            >
+              {results?.grade || "N/A"}
+            </Badge>
+            <span className="text-sm font-medium text-muted-foreground">
+              ({parseFloat(results?.gradePoint || "0").toFixed(2)} GP)
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Remark and Status */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">
-            Remark
-          </Label>
-          <p className="text-base">{results?.remark || "N/A"}</p>
+      {/* Status & Additional Info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="border border-border rounded-lg p-4 bg-card space-y-3">
+          <div>
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1">
+              Remark
+            </Label>
+            <p className="text-sm font-medium text-foreground">
+              {results?.remark || "N/A"}
+            </p>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+              Status
+            </Label>
+            <Badge
+              variant={getStatusVariant(results?.status || "Draft")}
+              className="text-sm px-3 py-1"
+            >
+              {results?.status || "Draft"}
+            </Badge>
+          </div>
         </div>
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">
-            Status
-          </Label>
-          <Badge variant="default">{results?.status || "Draft"}</Badge>
-        </div>
-      </div>
 
-      {/* Additional Info */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">
-            Carry Over
-          </Label>
-          <p className="text-base">{results?.isCarryOver ? "Yes" : "No"}</p>
-        </div>
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">
-            Attempt Number
-          </Label>
-          <p className="text-base">{results?.attemptNumber || 1}</p>
+        <div className="border border-border rounded-lg p-4 bg-card">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                Carry Over
+              </Label>
+              <Badge
+                variant={results?.isCarryOver ? "destructive" : "secondary"}
+                className="text-sm px-3 py-1"
+              >
+                {results?.isCarryOver ? "Yes" : "No"}
+              </Badge>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                Attempt Number
+              </Label>
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-sm font-bold text-primary">
+                    {results?.attemptNumber || 1}
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {results?.attemptNumber === 1
+                    ? "First Attempt"
+                    : `Attempt #${results?.attemptNumber}`}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
