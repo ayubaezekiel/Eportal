@@ -31,6 +31,8 @@ import {
   alumniRouter,
   auditLogsRouter,
   systemSettingsRouter,
+  rolesRouter,
+  permissionsRouter,
 } from "./routers";
 
 export const appRouter = {
@@ -73,6 +75,8 @@ export const appRouter = {
   alumni: alumniRouter,
   auditLogs: auditLogsRouter,
   systemSettings: systemSettingsRouter,
+  roles: rolesRouter,
+  permissions: permissionsRouter,
 };
 
 export type AppRouter = typeof appRouter;

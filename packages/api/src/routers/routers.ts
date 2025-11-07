@@ -1,8 +1,7 @@
 import { db } from "@Eportal/db";
-import { and, asc, desc, eq, like, or } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import z from "zod";
-import { protectedProcedure, publicProcedure } from "../index";
-
+import { protectedProcedure } from "../index";
 import {
   academicSessions,
   alumni,
@@ -25,228 +24,123 @@ import {
   hostels,
   notifications,
   payments,
+  permissions,
   petitions,
   programmes,
   results,
+  rolePermissions,
+  roles,
   scholarshipApplications,
   scholarships,
   senateDecisions,
   systemSettings,
   transcripts,
   user,
+  userRoles,
 } from "@Eportal/db/schema/school";
 
 // Users Router
 export const usersRouter = {
-  getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(user).orderBy(desc(user.createdAt));
-  }),
+  getAll: protectedProcedure
+    .meta({ requiredPermission: { action: "view", resource: "users" } })
+    .handler(async ({ context }) => {
+      await context.hasPermission("view", "users");
+      return await db.select().from(user).orderBy(user.createdAt);
+    }),
 
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .handler(async ({ input }) => {
-      const [userRecord] = await db
+    .meta({ requiredPermission: { action: "view", resource: "users" } })
+    .handler(async ({ context, input }) => {
+      await context.hasPermission("view", "users");
+      const [record] = await db
         .select()
         .from(user)
         .where(eq(user.id, input.id));
-      return userRecord;
-    }),
-
-  getByUserType: protectedProcedure
-    .input(z.object({ userType: z.string() }))
-    .handler(async ({ input }) => {
-      return await db
-        .select()
-        .from(user)
-        .where(eq(user.userType, input.userType))
-        .orderBy(asc(user.firstName));
-    }),
-
-  getByDepartment: protectedProcedure
-    .input(z.object({ departmentId: z.string().uuid() }))
-    .handler(async ({ input }) => {
-      return await db
-        .select()
-        .from(user)
-        .where(eq(user.departmentId, input.departmentId))
-        .orderBy(asc(user.firstName));
-    }),
-
-  getByFaculty: protectedProcedure
-    .input(z.object({ facultyId: z.string().uuid() }))
-    .handler(async ({ input }) => {
-      return await db
-        .select()
-        .from(user)
-        .where(eq(user.facultyId, input.facultyId))
-        .orderBy(asc(user.firstName));
-    }),
-
-  getStudentsByLevel: protectedProcedure
-    .input(z.object({ level: z.number() }))
-    .handler(async ({ input }) => {
-      return await db
-        .select()
-        .from(user)
-        .where(
-          and(eq(user.userType, "student"), eq(user.currentLevel, input.level))
-        )
-        .orderBy(asc(user.matricNumber));
-    }),
-
-  searchUsers: protectedProcedure
-    .input(
-      z.object({
-        searchTerm: z.string(),
-        userType: z.string().optional(),
-      })
-    )
-    .handler(async ({ input }) => {
-      const conditions = [
-        or(
-          like(user.firstName, `%${input.searchTerm}%`),
-          like(user.lastName, `%${input.searchTerm}%`),
-          like(user.email, `%${input.searchTerm}%`),
-          like(user.matricNumber, `%${input.searchTerm}%`),
-          like(user.staffId, `%${input.searchTerm}%`)
-        ),
-      ];
-
-      if (input.userType) {
-        conditions.push(eq(user.userType, input.userType));
-      }
-
-      return await db
-        .select()
-        .from(user)
-        .where(and(...conditions))
-        .orderBy(asc(user.firstName));
-    }),
-
-  getRecentUsers: protectedProcedure
-    .input(z.object({ limit: z.number().default(10) }))
-    .handler(async ({ input }) => {
-      return await db
-        .select()
-        .from(user)
-        .orderBy(desc(user.createdAt))
-        .limit(input.limit);
+      return record;
     }),
 
   create: protectedProcedure
     .input(
       z.object({
-        name: z.string(),
         email: z.string().email(),
         password: z.string().min(8),
-        confirmPassword: z.string(),
-        userType: z.string(),
-        status: z.string().default("active"),
-        firstName: z.string().min(2),
-        middleName: z.string().optional(),
-        lastName: z.string().min(2),
-        gender: z.string(),
-        dateOfBirth: z.string(),
-        phoneNumber: z.string().min(11),
-        alternatePhone: z.string().optional(),
-        image: z.string().optional(),
-        stateOfOrigin: z.string(),
-        lgaOfOrigin: z.string(),
-        nationality: z.string().default("Nigeria"),
-        permanentAddress: z.string().min(10),
-        contactAddress: z.string().min(10),
-        nextOfKinName: z.string().optional(),
-        nextOfKinRelationship: z.string().optional(),
-        nextOfKinPhone: z.string().optional(),
-        nextOfKinAddress: z.string().optional(),
-        matricNumber: z.string().optional(),
-        jambRegNumber: z.string().optional(),
-        modeOfEntry: z.string().optional(),
-        admissionYear: z.number().optional(),
-        currentLevel: z.number().min(100).max(900).optional(),
-        currentSemester: z.string().optional(),
-        studyMode: z.string().optional(),
-        facultyId: z.string().uuid().optional(),
-        departmentId: z.string().uuid().optional(),
-        programmeId: z.string().uuid().optional(),
-        cgpa: z.string(),
-        totalCreditsEarned: z.number().default(0),
-        staffId: z.string().optional(),
-        designation: z.string().optional(),
-        employmentDate: z.string().optional(),
-        employmentType: z.string().optional(),
-        officeLocation: z.string().optional(),
-        permissions: z.any().default({}),
-        isOnProbation: z.boolean().default(false),
-        probationReason: z.string().optional(),
-        isDeferred: z.boolean().default(false),
-        defermentStartDate: z.string().optional(),
-        defermentEndDate: z.string().optional(),
+        userType: z.enum([
+          "student",
+          "lecturer",
+          "admin",
+          "hod",
+          "dean",
+          "registrar",
+          "bursar",
+        ]),
+        // ... other fields
+        roleIds: z.array(z.string().uuid()).optional(),
       })
     )
-    .handler(async ({ input }) => {
-      const { confirmPassword, ...userData } = input;
-      return await db.insert(user).values(userData);
+    .meta({ requiredPermission: { action: "create", resource: "users" } })
+    .handler(async ({ context, input }) => {
+      await context.hasPermission("create", "users");
+
+      const { roleIds, ...userData } = input;
+      const [newUser] = await db.insert(user).values(userData).returning();
+
+      if (roleIds?.length) {
+        await db
+          .insert(userRoles)
+          .values(roleIds.map((roleId) => ({ userId: newUser.id, roleId })));
+      }
+
+      return newUser;
     }),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.string().uuid(),
-        email: z.string().email().optional(),
-        userType: z.string().optional(),
-        status: z.string().optional(),
-        firstName: z.string().min(2).optional(),
-        middleName: z.string().optional(),
-        lastName: z.string().min(2).optional(),
-        gender: z.string().optional(),
-        dateOfBirth: z.string().optional(),
-        phoneNumber: z.string().min(11).optional(),
-        alternatePhone: z.string().optional(),
-        image: z.string().optional(),
-        stateOfOrigin: z.string().optional(),
-        lgaOfOrigin: z.string().optional(),
-        nationality: z.string().optional(),
-        permanentAddress: z.string().optional(),
-        contactAddress: z.string().optional(),
-        nextOfKinName: z.string().optional(),
-        nextOfKinRelationship: z.string().optional(),
-        nextOfKinPhone: z.string().optional(),
-        nextOfKinAddress: z.string().optional(),
-        matricNumber: z.string().optional(),
-        jambRegNumber: z.string().optional(),
-        modeOfEntry: z.string().optional(),
-        admissionYear: z.number().optional(),
-        currentLevel: z.number().optional(),
-        currentSemester: z.string().optional(),
-        studyMode: z.string().optional(),
-        facultyId: z.string().optional(),
-        departmentId: z.string().optional(),
-        programmeId: z.string().optional(),
-        cgpa: z.string().optional(),
-        totalCreditsEarned: z.number().optional(),
-        staffId: z.string().optional(),
-        designation: z.string().optional(),
-        employmentDate: z.string().optional(),
-        employmentType: z.string().optional(),
-        officeLocation: z.string().optional(),
-        permissions: z.any().optional(),
-        isOnProbation: z.boolean().optional(),
-        probationReason: z.string().optional(),
-        isDeferred: z.boolean().optional(),
-        defermentStartDate: z.string().optional(),
-        defermentEndDate: z.string().optional(),
+        // ... other fields
+        roleIds: z.array(z.string().uuid()).optional(),
       })
     )
-    .handler(async ({ input }) => {
-      const { id, ...updateData } = input;
-      return await db.update(user).set(updateData).where(eq(user.id, id));
+    .meta({ requiredPermission: { action: "update", resource: "users" } })
+    .handler(async ({ context, input }) => {
+      await context.hasPermission("update", "users");
+
+      const { id, roleIds, ...updateData } = input;
+
+      await db.update(user).set(updateData).where(eq(user.id, id));
+
+      if (roleIds !== undefined) {
+        await db.delete(userRoles).where(eq(userRoles.userId, id));
+        if (roleIds.length > 0) {
+          await db
+            .insert(userRoles)
+            .values(roleIds.map((roleId) => ({ userId: id, roleId })));
+        }
+      }
+
+      return { success: true };
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
+    .meta({ requiredPermission: { action: "delete", resource: "users" } })
+    .handler(async ({ context, input }) => {
+      await context.hasPermission("delete", "users");
+      await db.delete(user).where(eq(user.id, input.id));
+      return { success: true };
+    }),
+
+  // NEW: Get user roles
+  getRoles: protectedProcedure
+    .input(z.object({ userId: z.string().uuid() }))
+    .meta({ requiredPermission: { action: "view", resource: "roles" } })
     .handler(async ({ input }) => {
-      return await db.delete(user).where(eq(user.id, input.id));
+      return await db
+        .select({ role: roles })
+        .from(userRoles)
+        .innerJoin(roles, eq(userRoles.roleId, roles.id))
+        .where(eq(userRoles.userId, input.userId));
     }),
 };
 
@@ -2339,5 +2233,74 @@ export const notificationsRouter = {
             eq(notifications.isRead, false)
           )
         );
+    }),
+};
+
+export const rolesRouter = {
+  getAll: protectedProcedure
+    .meta({ requiredPermission: { action: "view", resource: "roles" } })
+    .handler(async ({ context }) => {
+      await context.hasPermission("view", "roles");
+      return await db.select().from(roles);
+    }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        permissionIds: z.array(z.string().uuid()),
+      })
+    )
+    .meta({ requiredPermission: { action: "create", resource: "roles" } })
+    .handler(async ({ context, input }) => {
+      await context.hasPermission("create", "roles");
+
+      const { permissionIds, ...roleData } = input;
+      const [role] = await db.insert(roles).values(roleData).returning();
+
+      if (permissionIds.length > 0) {
+        await db
+          .insert(rolePermissions)
+          .values(
+            permissionIds.map((pid) => ({ roleId: role.id, permissionId: pid }))
+          );
+      }
+
+      return role;
+    }),
+
+  updatePermissions: protectedProcedure
+    .input(
+      z.object({
+        roleId: z.string().uuid(),
+        permissionIds: z.array(z.string().uuid()),
+      })
+    )
+    .meta({ requiredPermission: { action: "update", resource: "roles" } })
+    .handler(async ({ context, input }) => {
+      await context.hasPermission("update", "roles");
+
+      const { roleId, permissionIds } = input;
+
+      await db
+        .delete(rolePermissions)
+        .where(eq(rolePermissions.roleId, roleId));
+      if (permissionIds.length > 0) {
+        await db
+          .insert(rolePermissions)
+          .values(permissionIds.map((pid) => ({ roleId, permissionId: pid })));
+      }
+
+      return { success: true };
+    }),
+};
+
+export const permissionsRouter = {
+  getAll: protectedProcedure
+    .meta({ requiredPermission: { action: "view", resource: "permissions" } })
+    .handler(async ({ context }) => {
+      await context.hasPermission("view", "permissions");
+      return await db.select().from(permissions);
     }),
 };

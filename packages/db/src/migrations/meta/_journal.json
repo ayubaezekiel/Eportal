@@ -8,6 +8,13 @@
       "when": 1762349934814,
       "tag": "0000_legal_callisto",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1762522785439,
+      "tag": "0001_lucky_microchip",
+      "breakpoints": true
     }
   ]
 }

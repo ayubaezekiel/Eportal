@@ -10,41 +10,41 @@ import { appRouter } from "@Eportal/api/routers/index";
 import { createContext } from "@Eportal/api/context";
 
 export const queryClient = new QueryClient({
-	queryCache: new QueryCache({
-		onError: (error) => {
-			toast.error(`Error: ${error.message}`, {
-				action: {
-					label: "retry",
-					onClick: () => {
-						queryClient.invalidateQueries();
-					},
-				},
-			});
-		},
-	}),
+  queryCache: new QueryCache({
+    onError: (error) => {
+      toast.error(`Error: ${error.message}`, {
+        action: {
+          label: "retry",
+          onClick: () => {
+            queryClient.invalidateQueries();
+          },
+        },
+      });
+    },
+  }),
 });
 
 const getORPCClient = createIsomorphicFn()
-	.server(() =>
-		createRouterClient(appRouter, {
-			context: async ({ req }) => {
-				return createContext({ req });
-			},
-		}),
-	)
-	.client((): RouterClient<typeof appRouter> => {
-		const link = new RPCLink({
-			url: `${window.location.origin}/api/rpc`,
-			fetch(url, options) {
-				return fetch(url, {
-					...options,
-					credentials: "include",
-				});
-			},
-		});
+  .server(() =>
+    createRouterClient(appRouter, {
+      context: async ({ req }) => {
+        return createContext({ req });
+      },
+    })
+  )
+  .client((): RouterClient<typeof appRouter> => {
+    const link = new RPCLink({
+      url: `${window.location.origin}/api/rpc`,
+      fetch(url, options) {
+        return fetch(url, {
+          ...options,
+          credentials: "include",
+        });
+      },
+    });
 
-		return createORPCClient(link);
-	});
+    return createORPCClient(link);
+  });
 
 export const client: RouterClient<typeof appRouter> = getORPCClient();
 

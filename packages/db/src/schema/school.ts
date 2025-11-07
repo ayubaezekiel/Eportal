@@ -70,9 +70,7 @@ export const user = pgTable("user", {
   employmentDate: text("employment_date"),
   employmentType: varchar("employment_type", { length: 50 }), // 'Full Time', 'Part Time', 'Contract', 'Adjunct'
   officeLocation: varchar("office_location", { length: 200 }),
-
-  // Permissions & Roles (JSON for flexibility)
-  permissions: jsonb("permissions").default({}), // {canViewResults: true, canEditCourses: false, etc}
+  isAdmin: boolean("is_admin").default(false),
 
   // Academic Status
   isOnProbation: boolean("is_on_probation").default(false),
@@ -885,6 +883,45 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// -----------------------------------------------
+export const roles = pgTable("roles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 50 }).notNull().unique(), // 'admin', 'hod', 'lecturer', 'student'
+  description: text("description"),
+  isSystemRole: boolean("is_system_role").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Permissions Table
+export const permissions = pgTable("permissions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  action: varchar("action", { length: 100 }).notNull(), // 'view', 'create', 'update', 'delete'
+  resource: varchar("resource", { length: 100 }).notNull(), // 'users', 'results', 'courses'
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Role-Permission Junction
+export const rolePermissions = pgTable("role_permissions", {
+  roleId: uuid("role_id")
+    .notNull()
+    .references(() => roles.id, { onDelete: "cascade" }),
+  permissionId: uuid("permission_id")
+    .notNull()
+    .references(() => permissions.id, { onDelete: "cascade" }),
+});
+
+// User-Role Junction
+export const userRoles = pgTable("user_roles", {
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  roleId: uuid("role_id")
+    .notNull()
+    .references(() => roles.id, { onDelete: "cascade" }),
+});
+
 // ============================================
 // RELATIONS
 // ============================================
@@ -894,6 +931,7 @@ export const usersRelations = relations(user, ({ one, many }) => ({
     fields: [user.facultyId],
     references: [faculties.id],
   }),
+  userRoles: many(userRoles),
   department: one(departments, {
     fields: [user.departmentId],
     references: [departments.id],
@@ -1194,5 +1232,40 @@ export const attendanceRelations = relations(attendance, ({ one }) => ({
   session: one(academicSessions, {
     fields: [attendance.sessionId],
     references: [academicSessions.id],
+  }),
+}));
+
+// Add to existing relations
+export const rolesRelations = relations(roles, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+  userRoles: many(userRoles),
+}));
+
+export const permissionsRelations = relations(permissions, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+}));
+
+export const rolePermissionsRelations = relations(
+  rolePermissions,
+  ({ one }) => ({
+    role: one(roles, {
+      fields: [rolePermissions.roleId],
+      references: [roles.id],
+    }),
+    permission: one(permissions, {
+      fields: [rolePermissions.permissionId],
+      references: [permissions.id],
+    }),
+  })
+);
+
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(user, {
+    fields: [userRoles.userId],
+    references: [user.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
   }),
 }));
