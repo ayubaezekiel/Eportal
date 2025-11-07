@@ -13,18 +13,12 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Edit, Eye, Trash } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { ResultForm } from "../forms";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import {
@@ -40,8 +34,8 @@ import { View } from "../view";
 export function ResultsTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [editingResult, setEditingResult] = useState<any>(null);
+  const [viewingResult, setViewingResult] = useState<any>(null);
   const { data: user } = useUser();
   const userType = user?.data?.user.userType === "student";
 
@@ -86,190 +80,159 @@ export function ResultsTable() {
     return "destructive";
   };
 
-  const columns: ColumnDef<ResultType>[] = [
-    {
-      accessorKey: "user.matricNumber",
-      header: "Matric No.",
-      cell: ({ row }) => row.original?.user?.matricNumber || "N/A",
-    },
-    {
-      accessorKey: "user.fullName",
-      header: "Student Name",
-      cell: ({ row }) => row.original?.user?.name || "N/A",
-    },
-    {
-      accessorKey: "courses.courseCode",
-      header: "Course Code",
-      cell: ({ row }) => row.original?.courses?.courseCode || "N/A",
-    },
-    {
-      accessorKey: "courses.courseTitle",
-      header: "Course Title",
-      cell: ({ row }) => row.original?.courses?.courseTitle || "N/A",
-    },
-    {
-      accessorKey: "academic_sessions.sessionName",
-      header: "Session",
-      cell: ({ row }) => row.original?.academic_sessions?.sessionName || "N/A",
-    },
-    {
-      accessorKey: "results.semester",
-      header: "Semester",
-      cell: ({ row }) => row.original?.results?.semester || "N/A",
-    },
-    {
-      accessorKey: "results.caTotal",
-      header: "CA",
-      cell: ({ row }) => {
-        const ca = row.original?.results?.caTotal;
-        return ca ? `${parseFloat(ca).toFixed(2)}` : "0.00";
+  const columns: ColumnDef<ResultType>[] = useMemo(
+    () => [
+      {
+        accessorKey: "user.matricNumber",
+        header: "Matric No.",
+        cell: ({ row }) => row.original?.user?.matricNumber || "N/A",
       },
-    },
-    {
-      accessorKey: "results.examScore",
-      header: "Exam",
-      cell: ({ row }) => {
-        const exam = row.original?.results?.examScore;
-        return exam ? `${parseFloat(exam).toFixed(2)}` : "0.00";
+      {
+        accessorKey: "user.fullName",
+        header: "Student Name",
+        cell: ({ row }) => row.original?.user?.name || "N/A",
       },
-    },
-    {
-      accessorKey: "results.totalScore",
-      header: "Total",
-      cell: ({ row }) => {
-        const total = row.original?.results?.totalScore;
-        return total ? `${parseFloat(total).toFixed(2)}` : "0.00";
+      {
+        accessorKey: "courses.courseCode",
+        header: "Course Code",
+        cell: ({ row }) => row.original?.courses?.courseCode || "N/A",
       },
-    },
-    {
-      accessorKey: "results.grade",
-      header: "Grade",
-      cell: ({ row }) => {
-        const grade = row.original?.results?.grade;
-        return grade ? (
-          <Badge variant={getGradeVariant(grade)}>{grade}</Badge>
-        ) : (
-          "N/A"
-        );
+      {
+        accessorKey: "courses.courseTitle",
+        header: "Course Title",
+        cell: ({ row }) => row.original?.courses?.courseTitle || "N/A",
       },
-    },
-    {
-      accessorKey: "results.gradePoint",
-      header: "GP",
-      cell: ({ row }) => {
-        const gp = row.original?.results?.gradePoint;
-        return gp ? parseFloat(gp).toFixed(2) : "0.00";
+      {
+        accessorKey: "academic_sessions.sessionName",
+        header: "Session",
+        cell: ({ row }) =>
+          row.original?.academic_sessions?.sessionName || "N/A",
       },
-    },
-    {
-      accessorKey: "results.remark",
-      header: "Remark",
-      cell: ({ row }) => row.original?.results?.remark || "N/A",
-    },
-    {
-      accessorKey: "results.status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.original?.results?.status || "Draft";
-        return <Badge variant={getStatusVariant(status)}>{status}</Badge>;
+      {
+        accessorKey: "results.semester",
+        header: "Semester",
+        cell: ({ row }) => row.original?.results?.semester || "N/A",
       },
-    },
-    {
-      accessorKey: "results.isCarryOver",
-      header: "C/O",
-      cell: ({ row }) => (
-        <Badge
-          variant={row.original?.results?.isCarryOver ? "outline" : "secondary"}
-        >
-          {row.original?.results?.isCarryOver ? "Yes" : "No"}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: "results.attemptNumber",
-      header: "Attempt",
-      cell: ({ row }) => row.original?.results?.attemptNumber || 1,
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="icon-sm">
-                <Edit className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-
-            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-              <ResultForm
-                mode="update"
-                result={{
-                  id: row.original?.results?.id,
-                  studentId: row.original?.results?.studentId as string,
-                  courseId: row.original?.results?.courseId as string,
-                  sessionId: row.original?.results?.sessionId as string,
-                  semester: row.original?.results?.semester as string,
-                  attendance: row.original?.results?.attendance || "0",
-                  assignment: row.original?.results?.assignment || "0",
-                  test1: row.original?.results?.test1 || "0",
-                  test2: row.original?.results?.test2 || "0",
-                  practical: row.original?.results?.practical || "0",
-                  caTotal: row.original?.results?.caTotal || "0",
-                  examScore: row.original?.results?.examScore || "0",
-                  totalScore: row.original?.results?.totalScore || "0",
-                  grade: row.original?.results?.grade || "",
-                  gradePoint: row.original?.results?.gradePoint || "0",
-                  remark: row.original?.results?.remark || "",
-                  status: row.original?.results?.status || "Draft",
-                  isCarryOver: row.original?.results?.isCarryOver || false,
-                  attemptNumber: row.original?.results?.attemptNumber || 1,
-                  uploadedBy: row.original?.results?.uploadedBy as string,
-                  uploadedAt: new Date(`${row.original?.results?.uploadedAt}`),
-                  verifiedBy: row.original?.results?.verifiedBy as string,
-                  verifiedAt: new Date(`${row.original?.results?.verifiedAt}`),
-                  approvedBy: row.original?.results?.approvedBy as string,
-                  approvedAt: new Date(`${row.original?.results?.approvedAt}`),
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon-sm">
-                <Eye className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Result Details</DialogTitle>
-              </DialogHeader>
-              <ResultDetails result={row.original} />
-            </DialogContent>
-          </Dialog>
-
-          <Button
-            variant="destructive"
-            size="icon-sm"
-            onClick={() => {
-              toast("Are you sure you want to delete this result?", {
-                action: {
-                  label: "Delete",
-                  onClick: () =>
-                    deleteResult.mutate({ id: `${row.original?.results?.id}` }),
-                },
-                cancel: "Cancel",
-              });
-            }}
+      {
+        accessorKey: "results.caTotal",
+        header: "CA",
+        cell: ({ row }) => {
+          const ca = row.original?.results?.caTotal;
+          return ca ? `${parseFloat(ca).toFixed(2)}` : "0.00";
+        },
+      },
+      {
+        accessorKey: "results.examScore",
+        header: "Exam",
+        cell: ({ row }) => {
+          const exam = row.original?.results?.examScore;
+          return exam ? `${parseFloat(exam).toFixed(2)}` : "0.00";
+        },
+      },
+      {
+        accessorKey: "results.totalScore",
+        header: "Total",
+        cell: ({ row }) => {
+          const total = row.original?.results?.totalScore;
+          return total ? `${parseFloat(total).toFixed(2)}` : "0.00";
+        },
+      },
+      {
+        accessorKey: "results.grade",
+        header: "Grade",
+        cell: ({ row }) => {
+          const grade = row.original?.results?.grade;
+          return grade ? (
+            <Badge variant={getGradeVariant(grade)}>{grade}</Badge>
+          ) : (
+            "N/A"
+          );
+        },
+      },
+      {
+        accessorKey: "results.gradePoint",
+        header: "GP",
+        cell: ({ row }) => {
+          const gp = row.original?.results?.gradePoint;
+          return gp ? parseFloat(gp).toFixed(2) : "0.00";
+        },
+      },
+      {
+        accessorKey: "results.remark",
+        header: "Remark",
+        cell: ({ row }) => row.original?.results?.remark || "N/A",
+      },
+      {
+        accessorKey: "results.status",
+        header: "Status",
+        cell: ({ row }) => {
+          const status = row.original?.results?.status || "Draft";
+          return <Badge variant={getStatusVariant(status)}>{status}</Badge>;
+        },
+      },
+      {
+        accessorKey: "results.isCarryOver",
+        header: "C/O",
+        cell: ({ row }) => (
+          <Badge
+            variant={
+              row.original?.results?.isCarryOver ? "outline" : "secondary"
+            }
           >
-            <Trash className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+            {row.original?.results?.isCarryOver ? "Yes" : "No"}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "results.attemptNumber",
+        header: "Attempt",
+        cell: ({ row }) => row.original?.results?.attemptNumber || 1,
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={() => setEditingResult(row.original)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setViewingResult(row.original)}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="destructive"
+              size="icon-sm"
+              onClick={() => {
+                toast("Are you sure you want to delete this result?", {
+                  action: {
+                    label: "Delete",
+                    onClick: () =>
+                      deleteResult.mutate({
+                        id: `${row.original?.results?.id}`,
+                      }),
+                  },
+                  cancel: "Cancel",
+                });
+              }}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
   const table = useReactTable({
     data: data || [],
@@ -387,6 +350,60 @@ export function ResultsTable() {
           </Button>
         </div>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={!!editingResult}
+        onOpenChange={(open) => !open && setEditingResult(null)}
+      >
+        <DialogContent className="sm:max-w-240 max-h-[90vh] overflow-y-auto">
+          {editingResult && (
+            <ResultForm
+              mode="update"
+              result={{
+                id: editingResult?.results?.id,
+                studentId: editingResult?.results?.studentId as string,
+                courseId: editingResult?.results?.courseId as string,
+                sessionId: editingResult?.results?.sessionId as string,
+                semester: editingResult?.results?.semester as string,
+                attendance: editingResult?.results?.attendance || "0",
+                assignment: editingResult?.results?.assignment || "0",
+                test1: editingResult?.results?.test1 || "0",
+                test2: editingResult?.results?.test2 || "0",
+                practical: editingResult?.results?.practical || "0",
+                caTotal: editingResult?.results?.caTotal || "0",
+                examScore: editingResult?.results?.examScore || "0",
+                totalScore: editingResult?.results?.totalScore || "0",
+                grade: editingResult?.results?.grade || "",
+                gradePoint: editingResult?.results?.gradePoint || "0",
+                remark: editingResult?.results?.remark || "",
+                status: editingResult?.results?.status || "Draft",
+                isCarryOver: editingResult?.results?.isCarryOver || false,
+                attemptNumber: editingResult?.results?.attemptNumber || 1,
+                uploadedBy: editingResult?.results?.uploadedBy as string,
+                uploadedAt: new Date(`${editingResult?.results?.uploadedAt}`),
+                verifiedBy: editingResult?.results?.verifiedBy as string,
+                verifiedAt: new Date(`${editingResult?.results?.verifiedAt}`),
+                approvedBy: editingResult?.results?.approvedBy as string,
+                approvedAt: new Date(`${editingResult?.results?.approvedAt}`),
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Dialog */}
+      <Dialog
+        open={!!viewingResult}
+        onOpenChange={(open) => !open && setViewingResult(null)}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Result Details</DialogTitle>
+          </DialogHeader>
+          {viewingResult && <ResultDetails result={viewingResult} />}
+        </DialogContent>
+      </Dialog>
     </View>
   );
 }
