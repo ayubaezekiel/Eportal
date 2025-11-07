@@ -193,13 +193,15 @@ export function ResultsTable() {
         header: "Actions",
         cell: ({ row }) => (
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="icon-sm"
-              onClick={() => setEditingResult(row.original)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
+            {!userType && (
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => setEditingResult(row.original)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
 
             <Button
               variant="ghost"
@@ -208,25 +210,26 @@ export function ResultsTable() {
             >
               <Eye className="h-4 w-4" />
             </Button>
-
-            <Button
-              variant="destructive"
-              size="icon-sm"
-              onClick={() => {
-                toast("Are you sure you want to delete this result?", {
-                  action: {
-                    label: "Delete",
-                    onClick: () =>
-                      deleteResult.mutate({
-                        id: `${row.original?.results?.id}`,
-                      }),
-                  },
-                  cancel: "Cancel",
-                });
-              }}
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
+            {!userType && (
+              <Button
+                variant="destructive"
+                size="icon-sm"
+                onClick={() => {
+                  toast("Are you sure you want to delete this result?", {
+                    action: {
+                      label: "Delete",
+                      onClick: () =>
+                        deleteResult.mutate({
+                          id: `${row.original?.results?.id}`,
+                        }),
+                    },
+                    cancel: "Cancel",
+                  });
+                }}
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         ),
       },
@@ -401,6 +404,7 @@ export function ResultsTable() {
           <DialogHeader>
             <DialogTitle>Result Details</DialogTitle>
           </DialogHeader>
+
           {viewingResult && <ResultDetails result={viewingResult} />}
         </DialogContent>
       </Dialog>
