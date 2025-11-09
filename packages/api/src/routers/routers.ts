@@ -46,7 +46,7 @@ export const usersRouter = {
     .meta({ requiredPermission: { action: "view", resource: "users" } })
     .handler(async ({ context }) => {
       const hasAccess = await context.hasPermission("view", "users");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
       return await db.select().from(user).orderBy(user.createdAt);
     }),
 
@@ -55,7 +55,7 @@ export const usersRouter = {
     .meta({ requiredPermission: { action: "view", resource: "users" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("view", "users");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
       const [record] = await db
         .select()
         .from(user)
@@ -92,7 +92,7 @@ export const usersRouter = {
     .meta({ requiredPermission: { action: "create", resource: "users" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("create", "users");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
 
       const { roleIds, ...userData } = input;
       const [newUser] = await db.insert(user).values(userData).returning();
@@ -100,7 +100,9 @@ export const usersRouter = {
       if (roleIds?.length) {
         await db
           .insert(userRoles)
-          .values(roleIds.map((roleId) => ({ userId: newUser.id, roleId })));
+          .values(
+            roleIds.map((roleId) => ({ userId: `${newUser?.id}`, roleId }))
+          );
       }
 
       return newUser;
@@ -112,22 +114,24 @@ export const usersRouter = {
         id: z.string().uuid(),
         email: z.string().email().optional(),
         name: z.string().optional(),
-        userType: z.enum([
-          "student",
-          "lecturer",
-          "admin",
-          "hod",
-          "dean",
-          "registrar",
-          "bursar",
-        ]).optional(),
+        userType: z
+          .enum([
+            "student",
+            "lecturer",
+            "admin",
+            "hod",
+            "dean",
+            "registrar",
+            "bursar",
+          ])
+          .optional(),
         roleIds: z.array(z.string().uuid()).optional(),
       })
     )
     .meta({ requiredPermission: { action: "update", resource: "users" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("update", "users");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
 
       const { id, roleIds, ...updateData } = input;
 
@@ -150,7 +154,7 @@ export const usersRouter = {
     .meta({ requiredPermission: { action: "delete", resource: "users" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("delete", "users");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
       await db.delete(user).where(eq(user.id, input.id));
       return { success: true };
     }),
@@ -160,7 +164,7 @@ export const usersRouter = {
     .meta({ requiredPermission: { action: "view", resource: "roles" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("view", "roles");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
       return await db
         .select({ role: roles })
         .from(userRoles)
@@ -585,7 +589,7 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "view", resource: "results" } })
     .handler(async ({ context }) => {
       const hasAccess = await context.hasPermission("view", "results");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
       return await db
         .select()
         .from(results)
@@ -600,7 +604,7 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "view", resource: "results" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("view", "results");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
       const [result] = await db
         .select()
         .from(results)
@@ -637,7 +641,7 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "create", resource: "results" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("create", "results");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
       return await db.insert(results).values({
         ...input,
         uploadedBy: context.userId,
@@ -665,7 +669,7 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "update", resource: "results" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("update", "results");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
       const { id, ...updateData } = input;
       return await db.update(results).set(updateData).where(eq(results.id, id));
     }),
@@ -675,7 +679,7 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "approve", resource: "results" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("approve", "results");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
       return await db
         .update(results)
         .set({
@@ -691,7 +695,7 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "delete", resource: "results" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("delete", "results");
-      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      if (!hasAccess) throw new ORPCError("Insufficient permissions");
       return await db.delete(results).where(eq(results.id, input.id));
     }),
 
@@ -701,7 +705,7 @@ export const resultsRouter = {
       // Students can view their own results, others need permission
       if (context.userId !== input.studentId) {
         const hasAccess = await context.hasPermission("view", "results");
-        if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+        if (!hasAccess) throw new ORPCError("Insufficient permissions");
       }
       return await db
         .select()

@@ -1,7 +1,7 @@
 import type React from "react";
 import { useState, type ReactNode } from "react";
 import { AlertCircle, ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -93,6 +93,7 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const { data: user, isPending: isUserPending } = useUser();
   const navigate = useNavigate();
+  const router = useRouter();
 
   const form = useForm({
     defaultValues: {
@@ -116,6 +117,7 @@ export function LoginForm() {
         if (data?.user) {
           toast.success(`Welcome back, ${data.user.email}!`);
           navigate({ to: "/dashboard" });
+          router.invalidate();
         }
       } catch (error) {
         console.error("Catch error:", error);
