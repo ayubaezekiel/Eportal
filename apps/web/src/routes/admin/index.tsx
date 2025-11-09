@@ -4,7 +4,10 @@ import { getUser } from "@/functions/get-user";
 import { orpc } from "@/utils/orpc";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { PermissionGuard, usePermission } from "@/components/auth/permission-guard";
+import {
+  PermissionGuard,
+  usePermission,
+} from "@/components/auth/permission-guard";
 import {
   BarChart3,
   Building,
@@ -39,16 +42,16 @@ export const Route = createFileRoute("/admin/")({
 
 function AdminDashboard() {
   const { session } = Route.useRouteContext();
-  const canViewUsers = usePermission("view", "users");
-  const canViewReports = usePermission("view", "reports");
-  const canViewSettings = usePermission("view", "settings");
+  // const canViewUsers = usePermission("view", "users");
+  // const canViewReports = usePermission("view", "reports");
+  // const canViewSettings = usePermission("view", "settings");
 
   // Fetch real data with permission checks
   const { data: users } = useQuery({
     ...orpc.users.getAll.queryOptions(),
-    enabled: canViewUsers,
+    // enabled: canViewUsers,
   });
-  
+
   const { data: payments } = useQuery(orpc.payments.getAll.queryOptions());
   const { data: academicSessions } = useQuery(
     orpc.academicSessions.getAll.queryOptions()

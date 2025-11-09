@@ -57,12 +57,12 @@ export async function getUserRoles(userId: string) {
 
 const requireAuth = o.middleware(async ({ context, next }) => {
   if (!context.session?.user) {
-    throw new ORPCError("UNAUTHORIZED", "Authentication required");
+    throw new ORPCError("UNAUTHORIZED");
   }
 
   const userId = context.session.user.id;
   const userRolesList = await getUserRoles(userId);
-  
+
   return next({
     context: {
       userId,
@@ -76,13 +76,14 @@ const requireAuth = o.middleware(async ({ context, next }) => {
 
 // Permission-based middleware
 export const requirePermission = (action: string, resource: string) =>
-  requireAuth.middleware(async ({ context, next }) => {
-    const hasAccess = await context.hasPermission(action, resource);
+  o.middleware(async ({ context, next }) => {
+    const hasAccess = await hasPermission(
+      context.session?.user.id as string,
+      action,
+      resource
+    );
     if (!hasAccess) {
-      throw new ORPCError(
-        "FORBIDDEN", 
-        `Insufficient permissions: ${action}:${resource}`
-      );
+      throw new ORPCError(`Insufficient permissions: ${action}:${resource}`);
     }
     return next({ context });
   });

@@ -1,44 +1,8 @@
 import { db } from "@Eportal/db";
-import { and, asc, desc, eq } from "drizzle-orm";
+import * as schema from "@Eportal/db/schema/school";
+import { and, desc, eq } from "drizzle-orm";
 import z from "zod";
 import { protectedProcedure } from "../index";
-import { ORPCError } from "@orpc/server";
-import {
-  academicSessions,
-  alumni,
-  announcements,
-  attendance,
-  auditLogs,
-  certificates,
-  clearances,
-  courseAllocation,
-  courseRegistrations,
-  courses,
-  departments,
-  documents,
-  examCards,
-  examinations,
-  faculties,
-  feeStructures,
-  hostelAllocations,
-  hostelRooms,
-  hostels,
-  notifications,
-  payments,
-  permissions,
-  petitions,
-  programmes,
-  results,
-  rolePermissions,
-  roles,
-  scholarshipApplications,
-  scholarships,
-  senateDecisions,
-  systemSettings,
-  transcripts,
-  user,
-  userRoles,
-} from "@Eportal/db/schema/school";
 
 // Users Router
 export const usersRouter = {
@@ -46,8 +10,8 @@ export const usersRouter = {
     .meta({ requiredPermission: { action: "view", resource: "users" } })
     .handler(async ({ context }) => {
       const hasAccess = await context.hasPermission("view", "users");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
-      return await db.select().from(user).orderBy(user.createdAt);
+      if (!hasAccess) return;
+      return await db.select().from(schema.user).orderBy(schema.user.createdAt);
     }),
 
   getById: protectedProcedure
@@ -55,11 +19,11 @@ export const usersRouter = {
     .meta({ requiredPermission: { action: "view", resource: "users" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("view", "users");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
+      if (!hasAccess) return;
       const [record] = await db
         .select()
-        .from(user)
-        .where(eq(user.id, input.id));
+        .from(schema.user)
+        .where(eq(schema.user.id, input.id));
       return record;
     }),
 
@@ -92,14 +56,17 @@ export const usersRouter = {
     .meta({ requiredPermission: { action: "create", resource: "users" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("create", "users");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
+      if (!hasAccess) return;
 
       const { roleIds, ...userData } = input;
-      const [newUser] = await db.insert(user).values(userData).returning();
+      const [newUser] = await db
+        .insert(schema.user)
+        .values(userData)
+        .returning();
 
       if (roleIds?.length) {
         await db
-          .insert(userRoles)
+          .insert(schema.userRoles)
           .values(
             roleIds.map((roleId) => ({ userId: `${newUser?.id}`, roleId }))
           );
@@ -131,17 +98,22 @@ export const usersRouter = {
     .meta({ requiredPermission: { action: "update", resource: "users" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("update", "users");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
+      if (!hasAccess) return;
 
       const { id, roleIds, ...updateData } = input;
 
-      await db.update(user).set(updateData).where(eq(user.id, id));
+      await db
+        .update(schema.user)
+        .set(updateData)
+        .where(eq(schema.user.id, id));
 
       if (roleIds !== undefined) {
-        await db.delete(userRoles).where(eq(userRoles.userId, id));
+        await db
+          .delete(schema.userRoles)
+          .where(eq(schema.userRoles.userId, id));
         if (roleIds.length > 0) {
           await db
-            .insert(userRoles)
+            .insert(schema.userRoles)
             .values(roleIds.map((roleId) => ({ userId: id, roleId })));
         }
       }
@@ -154,8 +126,8 @@ export const usersRouter = {
     .meta({ requiredPermission: { action: "delete", resource: "users" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("delete", "users");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
-      await db.delete(user).where(eq(user.id, input.id));
+      if (!hasAccess) return;
+      await db.delete(schema.user).where(eq(schema.user.id, input.id));
       return { success: true };
     }),
 
@@ -164,27 +136,27 @@ export const usersRouter = {
     .meta({ requiredPermission: { action: "view", resource: "roles" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("view", "roles");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
+      if (!hasAccess) return;
       return await db
-        .select({ role: roles })
-        .from(userRoles)
-        .innerJoin(roles, eq(userRoles.roleId, roles.id))
-        .where(eq(userRoles.userId, input.userId));
+        .select({ role: schema.roles })
+        .from(schema.userRoles)
+        .innerJoin(schema.roles, eq(schema.userRoles.roleId, schema.roles.id))
+        .where(eq(schema.userRoles.userId, input.userId));
     }),
 };
 
 // Faculties Router
 export const facultiesRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(faculties);
+    return await db.select().from(schema.faculties);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [faculty] = await db
         .select()
-        .from(faculties)
-        .where(eq(faculties.id, input.id));
+        .from(schema.faculties)
+        .where(eq(schema.faculties.id, input.id));
       return faculty;
     }),
   create: protectedProcedure
@@ -199,7 +171,7 @@ export const facultiesRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(faculties).values(input);
+      return await db.insert(schema.faculties).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -216,29 +188,31 @@ export const facultiesRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(faculties)
+        .update(schema.faculties)
         .set(updateData)
-        .where(eq(faculties.id, id));
+        .where(eq(schema.faculties.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(faculties).where(eq(faculties.id, input.id));
+      return await db
+        .delete(schema.faculties)
+        .where(eq(schema.faculties.id, input.id));
     }),
 };
 
 // Departments Router
 export const departmentsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(departments);
+    return await db.select().from(schema.departments);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [department] = await db
         .select()
-        .from(departments)
-        .where(eq(departments.id, input.id));
+        .from(schema.departments)
+        .where(eq(schema.departments.id, input.id));
       return department;
     }),
   create: protectedProcedure
@@ -254,7 +228,7 @@ export const departmentsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(departments).values(input);
+      return await db.insert(schema.departments).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -272,29 +246,31 @@ export const departmentsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(departments)
+        .update(schema.departments)
         .set(updateData)
-        .where(eq(departments.id, id));
+        .where(eq(schema.departments.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(departments).where(eq(departments.id, input.id));
+      return await db
+        .delete(schema.departments)
+        .where(eq(schema.departments.id, input.id));
     }),
 };
 
 // Programmes Router
 export const programmesRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(programmes);
+    return await db.select().from(schema.programmes);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [programme] = await db
         .select()
-        .from(programmes)
-        .where(eq(programmes.id, input.id));
+        .from(schema.programmes)
+        .where(eq(schema.programmes.id, input.id));
       return programme;
     }),
   create: protectedProcedure
@@ -312,7 +288,7 @@ export const programmesRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(programmes).values(input);
+      return await db.insert(schema.programmes).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -332,29 +308,31 @@ export const programmesRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(programmes)
+        .update(schema.programmes)
         .set(updateData)
-        .where(eq(programmes.id, id));
+        .where(eq(schema.programmes.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(programmes).where(eq(programmes.id, input.id));
+      return await db
+        .delete(schema.programmes)
+        .where(eq(schema.programmes.id, input.id));
     }),
 };
 
 // Courses Router
 export const coursesRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(courses);
+    return await db.select().from(schema.courses);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [course] = await db
         .select()
-        .from(courses)
-        .where(eq(courses.id, input.id));
+        .from(schema.courses)
+        .where(eq(schema.courses.id, input.id));
       return course;
     }),
   create: protectedProcedure
@@ -373,7 +351,7 @@ export const coursesRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(courses).values(input);
+      return await db.insert(schema.courses).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -393,27 +371,32 @@ export const coursesRouter = {
     )
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
-      return await db.update(courses).set(updateData).where(eq(courses.id, id));
+      return await db
+        .update(schema.courses)
+        .set(updateData)
+        .where(eq(schema.courses.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(courses).where(eq(courses.id, input.id));
+      return await db
+        .delete(schema.courses)
+        .where(eq(schema.courses.id, input.id));
     }),
 };
 
 // Course Allocation Router
 export const courseAllocationRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(courseAllocation);
+    return await db.select().from(schema.courseAllocation);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [allocation] = await db
         .select()
-        .from(courseAllocation)
-        .where(eq(courseAllocation.id, input.id));
+        .from(schema.courseAllocation)
+        .where(eq(schema.courseAllocation.id, input.id));
       return allocation;
     }),
   create: protectedProcedure
@@ -428,7 +411,7 @@ export const courseAllocationRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(courseAllocation).values(input);
+      return await db.insert(schema.courseAllocation).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -445,16 +428,16 @@ export const courseAllocationRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(courseAllocation)
+        .update(schema.courseAllocation)
         .set(updateData)
-        .where(eq(courseAllocation.id, id));
+        .where(eq(schema.courseAllocation.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .delete(courseAllocation)
-        .where(eq(courseAllocation.id, input.id));
+        .delete(schema.courseAllocation)
+        .where(eq(schema.courseAllocation.id, input.id));
     }),
 };
 
@@ -463,14 +446,20 @@ export const courseRegistrationsRouter = {
   getAll: protectedProcedure.handler(async () => {
     return await db
       .select()
-      .from(courseRegistrations)
-      .innerJoin(courses, eq(courseRegistrations.courseId, courses.id))
-      .innerJoin(user, eq(courseRegistrations.studentId, user.id))
+      .from(schema.courseRegistrations)
       .innerJoin(
-        academicSessions,
-        eq(courseRegistrations.sessionId, academicSessions.id)
+        schema.courses,
+        eq(schema.courseRegistrations.courseId, schema.courses.id)
       )
-      .orderBy(desc(courseRegistrations.registrationDate));
+      .innerJoin(
+        schema.user,
+        eq(schema.courseRegistrations.studentId, schema.user.id)
+      )
+      .innerJoin(
+        schema.academicSessions,
+        eq(schema.courseRegistrations.sessionId, schema.academicSessions.id)
+      )
+      .orderBy(desc(schema.courseRegistrations.registrationDate));
   }),
 
   getById: protectedProcedure
@@ -478,15 +467,21 @@ export const courseRegistrationsRouter = {
     .handler(async ({ input }) => {
       const [registration] = await db
         .select()
-        .from(courseRegistrations)
-        .where(eq(courseRegistrations.id, input.id))
-        .innerJoin(courses, eq(courseRegistrations.courseId, courses.id))
-        .innerJoin(user, eq(courseRegistrations.studentId, user.id))
+        .from(schema.courseRegistrations)
+        .where(eq(schema.courseRegistrations.id, input.id))
         .innerJoin(
-          academicSessions,
-          eq(courseRegistrations.sessionId, academicSessions.id)
+          schema.courses,
+          eq(schema.courseRegistrations.courseId, schema.courses.id)
         )
-        .orderBy(desc(courseRegistrations.registrationDate));
+        .innerJoin(
+          schema.user,
+          eq(schema.courseRegistrations.studentId, schema.user.id)
+        )
+        .innerJoin(
+          schema.academicSessions,
+          eq(schema.courseRegistrations.sessionId, schema.academicSessions.id)
+        )
+        .orderBy(desc(schema.courseRegistrations.registrationDate));
 
       return registration;
     }),
@@ -496,15 +491,21 @@ export const courseRegistrationsRouter = {
     .handler(async ({ input }) => {
       return await db
         .select()
-        .from(courseRegistrations)
-        .where(eq(courseRegistrations.studentId, input.studentId))
-        .innerJoin(courses, eq(courseRegistrations.courseId, courses.id))
-        .innerJoin(user, eq(courseRegistrations.studentId, user.id))
+        .from(schema.courseRegistrations)
+        .where(eq(schema.courseRegistrations.studentId, input.studentId))
         .innerJoin(
-          academicSessions,
-          eq(courseRegistrations.sessionId, academicSessions.id)
+          schema.courses,
+          eq(schema.courseRegistrations.courseId, schema.courses.id)
         )
-        .orderBy(desc(courseRegistrations.registrationDate));
+        .innerJoin(
+          schema.user,
+          eq(schema.courseRegistrations.studentId, schema.user.id)
+        )
+        .innerJoin(
+          schema.academicSessions,
+          eq(schema.courseRegistrations.sessionId, schema.academicSessions.id)
+        )
+        .orderBy(desc(schema.courseRegistrations.registrationDate));
     }),
 
   getByStudentAndSession: protectedProcedure
@@ -517,27 +518,29 @@ export const courseRegistrationsRouter = {
     )
     .handler(async ({ input }) => {
       const conditions = [
-        eq(courseRegistrations.studentId, input.studentId),
-        eq(courseRegistrations.sessionId, input.sessionId),
+        eq(schema.courseRegistrations.studentId, input.studentId),
+        eq(schema.courseRegistrations.sessionId, input.sessionId),
       ];
 
       if (input.semester) {
-        conditions.push(eq(courseRegistrations.semester, input.semester));
+        conditions.push(
+          eq(schema.courseRegistrations.semester, input.semester)
+        );
       }
 
       return await db
         .select()
-        .from(courseRegistrations)
+        .from(schema.courseRegistrations)
         .where(and(...conditions))
-        .orderBy(desc(courseRegistrations.registrationDate));
+        .orderBy(desc(schema.courseRegistrations.registrationDate));
     }),
 
   getPendingApprovals: protectedProcedure.handler(async () => {
     return await db
       .select()
-      .from(courseRegistrations)
-      .where(eq(courseRegistrations.status, "Pending"))
-      .orderBy(desc(courseRegistrations.registrationDate));
+      .from(schema.courseRegistrations)
+      .where(eq(schema.courseRegistrations.status, "Pending"))
+      .orderBy(desc(schema.courseRegistrations.registrationDate));
   }),
 
   create: protectedProcedure
@@ -552,7 +555,7 @@ export const courseRegistrationsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(courseRegistrations).values(input);
+      return await db.insert(schema.courseRegistrations).values(input);
     }),
 
   update: protectedProcedure
@@ -569,17 +572,17 @@ export const courseRegistrationsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(courseRegistrations)
+        .update(schema.courseRegistrations)
         .set(updateData)
-        .where(eq(courseRegistrations.id, id));
+        .where(eq(schema.courseRegistrations.id, id));
     }),
 
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .delete(courseRegistrations)
-        .where(eq(courseRegistrations.id, input.id));
+        .delete(schema.courseRegistrations)
+        .where(eq(schema.courseRegistrations.id, input.id));
     }),
 };
 
@@ -589,14 +592,20 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "view", resource: "results" } })
     .handler(async ({ context }) => {
       const hasAccess = await context.hasPermission("view", "results");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
+      if (!hasAccess) return;
       return await db
         .select()
-        .from(results)
-        .leftJoin(courses, eq(results.courseId, courses.id))
-        .leftJoin(user, eq(results.studentId, user.id))
-        .leftJoin(academicSessions, eq(results.sessionId, academicSessions.id))
-        .orderBy(desc(results.createdAt));
+        .from(schema.results)
+        .leftJoin(
+          schema.courses,
+          eq(schema.results.courseId, schema.courses.id)
+        )
+        .leftJoin(schema.user, eq(schema.results.studentId, schema.user.id))
+        .leftJoin(
+          schema.academicSessions,
+          eq(schema.results.sessionId, schema.academicSessions.id)
+        )
+        .orderBy(desc(schema.results.createdAt));
     }),
 
   getById: protectedProcedure
@@ -604,14 +613,20 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "view", resource: "results" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("view", "results");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
+      if (!hasAccess) return;
       const [result] = await db
         .select()
-        .from(results)
-        .leftJoin(courses, eq(results.courseId, courses.id))
-        .leftJoin(user, eq(results.studentId, user.id))
-        .leftJoin(academicSessions, eq(results.sessionId, academicSessions.id))
-        .where(eq(results.id, input.id));
+        .from(schema.results)
+        .leftJoin(
+          schema.courses,
+          eq(schema.results.courseId, schema.courses.id)
+        )
+        .leftJoin(schema.user, eq(schema.results.studentId, schema.user.id))
+        .leftJoin(
+          schema.academicSessions,
+          eq(schema.results.sessionId, schema.academicSessions.id)
+        )
+        .where(eq(schema.results.id, input.id));
       return result;
     }),
 
@@ -641,8 +656,8 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "create", resource: "results" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("create", "results");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
-      return await db.insert(results).values({
+      if (!hasAccess) return;
+      return await db.insert(schema.results).values({
         ...input,
         uploadedBy: context.userId,
       });
@@ -669,9 +684,12 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "update", resource: "results" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("update", "results");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
+      if (!hasAccess) return;
       const { id, ...updateData } = input;
-      return await db.update(results).set(updateData).where(eq(results.id, id));
+      return await db
+        .update(schema.results)
+        .set(updateData)
+        .where(eq(schema.results.id, id));
     }),
 
   approve: protectedProcedure
@@ -679,15 +697,15 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "approve", resource: "results" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("approve", "results");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
+      if (!hasAccess) return;
       return await db
-        .update(results)
+        .update(schema.results)
         .set({
           status: "Approved",
           approvedBy: context.userId,
           approvedAt: new Date(),
         })
-        .where(eq(results.id, input.id));
+        .where(eq(schema.results.id, input.id));
     }),
 
   delete: protectedProcedure
@@ -695,8 +713,10 @@ export const resultsRouter = {
     .meta({ requiredPermission: { action: "delete", resource: "results" } })
     .handler(async ({ context, input }) => {
       const hasAccess = await context.hasPermission("delete", "results");
-      if (!hasAccess) throw new ORPCError("Insufficient permissions");
-      return await db.delete(results).where(eq(results.id, input.id));
+      if (!hasAccess) return;
+      return await db
+        .delete(schema.results)
+        .where(eq(schema.results.id, input.id));
     }),
 
   getByStudent: protectedProcedure
@@ -705,16 +725,22 @@ export const resultsRouter = {
       // Students can view their own results, others need permission
       if (context.userId !== input.studentId) {
         const hasAccess = await context.hasPermission("view", "results");
-        if (!hasAccess) throw new ORPCError("Insufficient permissions");
+        if (!hasAccess) return;
       }
       return await db
         .select()
-        .from(results)
-        .leftJoin(courses, eq(results.courseId, courses.id))
-        .leftJoin(user, eq(results.studentId, user.id))
-        .leftJoin(academicSessions, eq(results.sessionId, academicSessions.id))
-        .where(eq(results.studentId, input.studentId))
-        .orderBy(desc(results.createdAt));
+        .from(schema.results)
+        .leftJoin(
+          schema.courses,
+          eq(schema.results.courseId, schema.courses.id)
+        )
+        .leftJoin(schema.user, eq(schema.results.studentId, schema.user.id))
+        .leftJoin(
+          schema.academicSessions,
+          eq(schema.results.sessionId, schema.academicSessions.id)
+        )
+        .where(eq(schema.results.studentId, input.studentId))
+        .orderBy(desc(schema.results.createdAt));
     }),
 };
 
@@ -723,8 +749,8 @@ export const academicSessionsRouter = {
   getAll: protectedProcedure.handler(async () => {
     return await db
       .select()
-      .from(academicSessions)
-      .orderBy(desc(academicSessions.startDate));
+      .from(schema.academicSessions)
+      .orderBy(desc(schema.academicSessions.startDate));
   }),
 
   getById: protectedProcedure
@@ -732,25 +758,25 @@ export const academicSessionsRouter = {
     .handler(async ({ input }) => {
       const [session] = await db
         .select()
-        .from(academicSessions)
-        .where(eq(academicSessions.id, input.id));
+        .from(schema.academicSessions)
+        .where(eq(schema.academicSessions.id, input.id));
       return session;
     }),
 
   getCurrent: protectedProcedure.handler(async () => {
     const [currentSession] = await db
       .select()
-      .from(academicSessions)
-      .where(eq(academicSessions.isCurrent, true));
+      .from(schema.academicSessions)
+      .where(eq(schema.academicSessions.isCurrent, true));
     return currentSession;
   }),
 
   getActive: protectedProcedure.handler(async () => {
     return await db
       .select()
-      .from(academicSessions)
-      .where(eq(academicSessions.isActive, true))
-      .orderBy(desc(academicSessions.startDate));
+      .from(schema.academicSessions)
+      .where(eq(schema.academicSessions.isActive, true))
+      .orderBy(desc(schema.academicSessions.startDate));
   }),
 
   create: protectedProcedure
@@ -772,7 +798,7 @@ export const academicSessionsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(academicSessions).values(input);
+      return await db.insert(schema.academicSessions).values(input);
     }),
 
   update: protectedProcedure
@@ -787,31 +813,31 @@ export const academicSessionsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(academicSessions)
+        .update(schema.academicSessions)
         .set(updateData)
-        .where(eq(academicSessions.id, id));
+        .where(eq(schema.academicSessions.id, id));
     }),
 
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .delete(academicSessions)
-        .where(eq(academicSessions.id, input.id));
+        .delete(schema.academicSessions)
+        .where(eq(schema.academicSessions.id, input.id));
     }),
 };
 // Fee Structures Router
 export const feeStructuresRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(feeStructures);
+    return await db.select().from(schema.feeStructures);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [feeStructure] = await db
         .select()
-        .from(feeStructures)
-        .where(eq(feeStructures.id, input.id));
+        .from(schema.feeStructures)
+        .where(eq(schema.feeStructures.id, input.id));
       return feeStructure;
     }),
   create: protectedProcedure
@@ -836,7 +862,7 @@ export const feeStructuresRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(feeStructures).values(input);
+      return await db.insert(schema.feeStructures).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -863,23 +889,26 @@ export const feeStructuresRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(feeStructures)
+        .update(schema.feeStructures)
         .set(updateData)
-        .where(eq(feeStructures.id, id));
+        .where(eq(schema.feeStructures.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .delete(feeStructures)
-        .where(eq(feeStructures.id, input.id));
+        .delete(schema.feeStructures)
+        .where(eq(schema.feeStructures.id, input.id));
     }),
 };
 
 // Payments Router
 export const paymentsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(payments).orderBy(desc(payments.paymentDate));
+    return await db
+      .select()
+      .from(schema.payments)
+      .orderBy(desc(schema.payments.paymentDate));
   }),
 
   getById: protectedProcedure
@@ -887,8 +916,8 @@ export const paymentsRouter = {
     .handler(async ({ input }) => {
       const [payment] = await db
         .select()
-        .from(payments)
-        .where(eq(payments.id, input.id));
+        .from(schema.payments)
+        .where(eq(schema.payments.id, input.id));
       return payment;
     }),
 
@@ -897,9 +926,9 @@ export const paymentsRouter = {
     .handler(async ({ input }) => {
       return await db
         .select()
-        .from(payments)
-        .where(eq(payments.studentId, input.studentId))
-        .orderBy(desc(payments.paymentDate));
+        .from(schema.payments)
+        .where(eq(schema.payments.studentId, input.studentId))
+        .orderBy(desc(schema.payments.paymentDate));
     }),
 
   getBySession: protectedProcedure
@@ -907,9 +936,9 @@ export const paymentsRouter = {
     .handler(async ({ input }) => {
       return await db
         .select()
-        .from(payments)
-        .where(eq(payments.sessionId, input.sessionId))
-        .orderBy(desc(payments.paymentDate));
+        .from(schema.payments)
+        .where(eq(schema.payments.sessionId, input.sessionId))
+        .orderBy(desc(schema.payments.paymentDate));
     }),
 
   getByStatus: protectedProcedure
@@ -917,9 +946,9 @@ export const paymentsRouter = {
     .handler(async ({ input }) => {
       return await db
         .select()
-        .from(payments)
-        .where(eq(payments.status, input.status))
-        .orderBy(desc(payments.paymentDate));
+        .from(schema.payments)
+        .where(eq(schema.payments.status, input.status))
+        .orderBy(desc(schema.payments.paymentDate));
     }),
 
   getRecentPayments: protectedProcedure
@@ -927,8 +956,8 @@ export const paymentsRouter = {
     .handler(async ({ input }) => {
       return await db
         .select()
-        .from(payments)
-        .orderBy(desc(payments.paymentDate))
+        .from(schema.payments)
+        .orderBy(desc(schema.payments.paymentDate))
         .limit(input.limit);
     }),
 
@@ -960,7 +989,7 @@ export const paymentsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(payments).values(input);
+      return await db.insert(schema.payments).values(input);
     }),
 
   update: protectedProcedure
@@ -980,30 +1009,32 @@ export const paymentsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(payments)
+        .update(schema.payments)
         .set(updateData)
-        .where(eq(payments.id, id));
+        .where(eq(schema.payments.id, id));
     }),
 
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(payments).where(eq(payments.id, input.id));
+      return await db
+        .delete(schema.payments)
+        .where(eq(schema.payments.id, input.id));
     }),
 };
 
 // Attendance Router
 export const attendanceRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(attendance);
+    return await db.select().from(schema.attendance);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [att] = await db
         .select()
-        .from(attendance)
-        .where(eq(attendance.id, input.id));
+        .from(schema.attendance)
+        .where(eq(schema.attendance.id, input.id));
       return att;
     }),
   create: protectedProcedure
@@ -1020,7 +1051,7 @@ export const attendanceRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(attendance).values(input);
+      return await db.insert(schema.attendance).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1039,29 +1070,31 @@ export const attendanceRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(attendance)
+        .update(schema.attendance)
         .set(updateData)
-        .where(eq(attendance.id, id));
+        .where(eq(schema.attendance.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(attendance).where(eq(attendance.id, input.id));
+      return await db
+        .delete(schema.attendance)
+        .where(eq(schema.attendance.id, input.id));
     }),
 };
 
 // Hostels Router
 export const hostelsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(hostels);
+    return await db.select().from(schema.hostels);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [hostel] = await db
         .select()
-        .from(hostels)
-        .where(eq(hostels.id, input.id));
+        .from(schema.hostels)
+        .where(eq(schema.hostels.id, input.id));
       return hostel;
     }),
   create: protectedProcedure
@@ -1078,7 +1111,7 @@ export const hostelsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(hostels).values(input);
+      return await db.insert(schema.hostels).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1096,27 +1129,32 @@ export const hostelsRouter = {
     )
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
-      return await db.update(hostels).set(updateData).where(eq(hostels.id, id));
+      return await db
+        .update(schema.hostels)
+        .set(updateData)
+        .where(eq(schema.hostels.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(hostels).where(eq(hostels.id, input.id));
+      return await db
+        .delete(schema.hostels)
+        .where(eq(schema.hostels.id, input.id));
     }),
 };
 
 // Hostel Rooms Router
 export const hostelRoomsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(hostelRooms);
+    return await db.select().from(schema.hostelRooms);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [room] = await db
         .select()
-        .from(hostelRooms)
-        .where(eq(hostelRooms.id, input.id));
+        .from(schema.hostelRooms)
+        .where(eq(schema.hostelRooms.id, input.id));
       return room;
     }),
   create: protectedProcedure
@@ -1132,7 +1170,7 @@ export const hostelRoomsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(hostelRooms).values(input);
+      return await db.insert(schema.hostelRooms).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1150,29 +1188,31 @@ export const hostelRoomsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(hostelRooms)
+        .update(schema.hostelRooms)
         .set(updateData)
-        .where(eq(hostelRooms.id, id));
+        .where(eq(schema.hostelRooms.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(hostelRooms).where(eq(hostelRooms.id, input.id));
+      return await db
+        .delete(schema.hostelRooms)
+        .where(eq(schema.hostelRooms.id, input.id));
     }),
 };
 
 // Hostel Allocations Router
 export const hostelAllocationsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(hostelAllocations);
+    return await db.select().from(schema.hostelAllocations);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [allocation] = await db
         .select()
-        .from(hostelAllocations)
-        .where(eq(hostelAllocations.id, input.id));
+        .from(schema.hostelAllocations)
+        .where(eq(schema.hostelAllocations.id, input.id));
       return allocation;
     }),
   create: protectedProcedure
@@ -1191,7 +1231,7 @@ export const hostelAllocationsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(hostelAllocations).values(input);
+      return await db.insert(schema.hostelAllocations).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1212,31 +1252,31 @@ export const hostelAllocationsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(hostelAllocations)
+        .update(schema.hostelAllocations)
         .set(updateData)
-        .where(eq(hostelAllocations.id, id));
+        .where(eq(schema.hostelAllocations.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .delete(hostelAllocations)
-        .where(eq(hostelAllocations.id, input.id));
+        .delete(schema.hostelAllocations)
+        .where(eq(schema.hostelAllocations.id, input.id));
     }),
 };
 
 // Announcements Router
 export const announcementsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(announcements);
+    return await db.select().from(schema.announcements);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [announcement] = await db
         .select()
-        .from(announcements)
-        .where(eq(announcements.id, input.id));
+        .from(schema.announcements)
+        .where(eq(schema.announcements.id, input.id));
       return announcement;
     }),
   create: protectedProcedure
@@ -1259,7 +1299,7 @@ export const announcementsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(announcements).values(input);
+      return await db.insert(schema.announcements).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1284,31 +1324,31 @@ export const announcementsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(announcements)
+        .update(schema.announcements)
         .set(updateData)
-        .where(eq(announcements.id, id));
+        .where(eq(schema.announcements.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .delete(announcements)
-        .where(eq(announcements.id, input.id));
+        .delete(schema.announcements)
+        .where(eq(schema.announcements.id, input.id));
     }),
 };
 
 // Clearances Router
 export const clearancesRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(clearances);
+    return await db.select().from(schema.clearances);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [clearance] = await db
         .select()
-        .from(clearances)
-        .where(eq(clearances.id, input.id));
+        .from(schema.clearances)
+        .where(eq(schema.clearances.id, input.id));
       return clearance;
     }),
   create: protectedProcedure
@@ -1342,7 +1382,7 @@ export const clearancesRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(clearances).values(input);
+      return await db.insert(schema.clearances).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1378,29 +1418,31 @@ export const clearancesRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(clearances)
+        .update(schema.clearances)
         .set(updateData)
-        .where(eq(clearances.id, id));
+        .where(eq(schema.clearances.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(clearances).where(eq(clearances.id, input.id));
+      return await db
+        .delete(schema.clearances)
+        .where(eq(schema.clearances.id, input.id));
     }),
 };
 
 // Documents Router
 export const documentsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(documents);
+    return await db.select().from(schema.documents);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [document] = await db
         .select()
-        .from(documents)
-        .where(eq(documents.id, input.id));
+        .from(schema.documents)
+        .where(eq(schema.documents.id, input.id));
       return document;
     }),
   create: protectedProcedure
@@ -1422,7 +1464,7 @@ export const documentsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(documents).values(input);
+      return await db.insert(schema.documents).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1446,29 +1488,31 @@ export const documentsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(documents)
+        .update(schema.documents)
         .set(updateData)
-        .where(eq(documents.id, id));
+        .where(eq(schema.documents.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(documents).where(eq(documents.id, input.id));
+      return await db
+        .delete(schema.documents)
+        .where(eq(schema.documents.id, input.id));
     }),
 };
 
 // Examinations Router
 export const examinationsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(examinations);
+    return await db.select().from(schema.examinations);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [exam] = await db
         .select()
-        .from(examinations)
-        .where(eq(examinations.id, input.id));
+        .from(schema.examinations)
+        .where(eq(schema.examinations.id, input.id));
       return exam;
     }),
   create: protectedProcedure
@@ -1490,7 +1534,7 @@ export const examinationsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(examinations).values(input);
+      return await db.insert(schema.examinations).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1514,29 +1558,31 @@ export const examinationsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(examinations)
+        .update(schema.examinations)
         .set(updateData)
-        .where(eq(examinations.id, id));
+        .where(eq(schema.examinations.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(examinations).where(eq(examinations.id, input.id));
+      return await db
+        .delete(schema.examinations)
+        .where(eq(schema.examinations.id, input.id));
     }),
 };
 
 // Exam Cards Router
 export const examCardsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(examCards);
+    return await db.select().from(schema.examCards);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [card] = await db
         .select()
-        .from(examCards)
-        .where(eq(examCards.id, input.id));
+        .from(schema.examCards)
+        .where(eq(schema.examCards.id, input.id));
       return card;
     }),
   create: protectedProcedure
@@ -1554,7 +1600,7 @@ export const examCardsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(examCards).values(input);
+      return await db.insert(schema.examCards).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1574,29 +1620,31 @@ export const examCardsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(examCards)
+        .update(schema.examCards)
         .set(updateData)
-        .where(eq(examCards.id, id));
+        .where(eq(schema.examCards.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(examCards).where(eq(examCards.id, input.id));
+      return await db
+        .delete(schema.examCards)
+        .where(eq(schema.examCards.id, input.id));
     }),
 };
 
 // Transcripts Router
 export const transcriptsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(transcripts);
+    return await db.select().from(schema.transcripts);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [transcript] = await db
         .select()
-        .from(transcripts)
-        .where(eq(transcripts.id, input.id));
+        .from(schema.transcripts)
+        .where(eq(schema.transcripts.id, input.id));
       return transcript;
     }),
   create: protectedProcedure
@@ -1624,7 +1672,7 @@ export const transcriptsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(transcripts).values(input);
+      return await db.insert(schema.transcripts).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1654,29 +1702,31 @@ export const transcriptsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(transcripts)
+        .update(schema.transcripts)
         .set(updateData)
-        .where(eq(transcripts.id, id));
+        .where(eq(schema.transcripts.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(transcripts).where(eq(transcripts.id, input.id));
+      return await db
+        .delete(schema.transcripts)
+        .where(eq(schema.transcripts.id, input.id));
     }),
 };
 
 // Certificates Router
 export const certificatesRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(certificates);
+    return await db.select().from(schema.certificates);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [certificate] = await db
         .select()
-        .from(certificates)
-        .where(eq(certificates.id, input.id));
+        .from(schema.certificates)
+        .where(eq(schema.certificates.id, input.id));
       return certificate;
     }),
   create: protectedProcedure
@@ -1699,7 +1749,7 @@ export const certificatesRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(certificates).values(input);
+      return await db.insert(schema.certificates).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1724,21 +1774,26 @@ export const certificatesRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(certificates)
+        .update(schema.certificates)
         .set(updateData)
-        .where(eq(certificates.id, id));
+        .where(eq(schema.certificates.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(certificates).where(eq(certificates.id, input.id));
+      return await db
+        .delete(schema.certificates)
+        .where(eq(schema.certificates.id, input.id));
     }),
 };
 
 // Petitions Router
 export const petitionsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(petitions).orderBy(desc(petitions.createdAt));
+    return await db
+      .select()
+      .from(schema.petitions)
+      .orderBy(desc(schema.petitions.createdAt));
   }),
 
   getById: protectedProcedure
@@ -1746,8 +1801,8 @@ export const petitionsRouter = {
     .handler(async ({ input }) => {
       const [petition] = await db
         .select()
-        .from(petitions)
-        .where(eq(petitions.id, input.id));
+        .from(schema.petitions)
+        .where(eq(schema.petitions.id, input.id));
       return petition;
     }),
 
@@ -1756,9 +1811,9 @@ export const petitionsRouter = {
     .handler(async ({ input }) => {
       return await db
         .select()
-        .from(petitions)
-        .where(eq(petitions.studentId, input.studentId))
-        .orderBy(desc(petitions.createdAt));
+        .from(schema.petitions)
+        .where(eq(schema.petitions.studentId, input.studentId))
+        .orderBy(desc(schema.petitions.createdAt));
     }),
 
   getByStatus: protectedProcedure
@@ -1766,17 +1821,17 @@ export const petitionsRouter = {
     .handler(async ({ input }) => {
       return await db
         .select()
-        .from(petitions)
-        .where(eq(petitions.status, input.status))
-        .orderBy(desc(petitions.createdAt));
+        .from(schema.petitions)
+        .where(eq(schema.petitions.status, input.status))
+        .orderBy(desc(schema.petitions.createdAt));
     }),
 
   getPending: protectedProcedure.handler(async () => {
     return await db
       .select()
-      .from(petitions)
-      .where(eq(petitions.status, "Pending"))
-      .orderBy(desc(petitions.createdAt));
+      .from(schema.petitions)
+      .where(eq(schema.petitions.status, "Pending"))
+      .orderBy(desc(schema.petitions.createdAt));
   }),
 
   create: protectedProcedure
@@ -1794,7 +1849,7 @@ export const petitionsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(petitions).values(input);
+      return await db.insert(schema.petitions).values(input);
     }),
 
   update: protectedProcedure
@@ -1811,30 +1866,32 @@ export const petitionsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(petitions)
+        .update(schema.petitions)
         .set(updateData)
-        .where(eq(petitions.id, id));
+        .where(eq(schema.petitions.id, id));
     }),
 
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(petitions).where(eq(petitions.id, input.id));
+      return await db
+        .delete(schema.petitions)
+        .where(eq(schema.petitions.id, input.id));
     }),
 };
 
 // Senate Decisions Router
 export const senateDecisionsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(senateDecisions);
+    return await db.select().from(schema.senateDecisions);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [decision] = await db
         .select()
-        .from(senateDecisions)
-        .where(eq(senateDecisions.id, input.id));
+        .from(schema.senateDecisions)
+        .where(eq(schema.senateDecisions.id, input.id));
       return decision;
     }),
   create: protectedProcedure
@@ -1853,7 +1910,7 @@ export const senateDecisionsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(senateDecisions).values(input);
+      return await db.insert(schema.senateDecisions).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1874,31 +1931,31 @@ export const senateDecisionsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(senateDecisions)
+        .update(schema.senateDecisions)
         .set(updateData)
-        .where(eq(senateDecisions.id, id));
+        .where(eq(schema.senateDecisions.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .delete(senateDecisions)
-        .where(eq(senateDecisions.id, input.id));
+        .delete(schema.senateDecisions)
+        .where(eq(schema.senateDecisions.id, input.id));
     }),
 };
 
 // Scholarships Router
 export const scholarshipsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(scholarships);
+    return await db.select().from(schema.scholarships);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [scholarship] = await db
         .select()
-        .from(scholarships)
-        .where(eq(scholarships.id, input.id));
+        .from(schema.scholarships)
+        .where(eq(schema.scholarships.id, input.id));
       return scholarship;
     }),
   create: protectedProcedure
@@ -1921,7 +1978,7 @@ export const scholarshipsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(scholarships).values(input);
+      return await db.insert(schema.scholarships).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -1946,29 +2003,31 @@ export const scholarshipsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(scholarships)
+        .update(schema.scholarships)
         .set(updateData)
-        .where(eq(scholarships.id, id));
+        .where(eq(schema.scholarships.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(scholarships).where(eq(scholarships.id, input.id));
+      return await db
+        .delete(schema.scholarships)
+        .where(eq(schema.scholarships.id, input.id));
     }),
 };
 
 // Scholarship Applications Router
 export const scholarshipApplicationsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(scholarshipApplications);
+    return await db.select().from(schema.scholarshipApplications);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [application] = await db
         .select()
-        .from(scholarshipApplications)
-        .where(eq(scholarshipApplications.id, input.id));
+        .from(schema.scholarshipApplications)
+        .where(eq(schema.scholarshipApplications.id, input.id));
       return application;
     }),
   create: protectedProcedure
@@ -1988,7 +2047,7 @@ export const scholarshipApplicationsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(scholarshipApplications).values(input);
+      return await db.insert(schema.scholarshipApplications).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -2010,31 +2069,31 @@ export const scholarshipApplicationsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(scholarshipApplications)
+        .update(schema.scholarshipApplications)
         .set(updateData)
-        .where(eq(scholarshipApplications.id, id));
+        .where(eq(schema.scholarshipApplications.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .delete(scholarshipApplications)
-        .where(eq(scholarshipApplications.id, input.id));
+        .delete(schema.scholarshipApplications)
+        .where(eq(schema.scholarshipApplications.id, input.id));
     }),
 };
 
 // Alumni Router
 export const alumniRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(alumni);
+    return await db.select().from(schema.alumni);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [alum] = await db
         .select()
-        .from(alumni)
-        .where(eq(alumni.id, input.id));
+        .from(schema.alumni)
+        .where(eq(schema.alumni.id, input.id));
       return alum;
     }),
   create: protectedProcedure
@@ -2057,7 +2116,7 @@ export const alumniRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(alumni).values(input);
+      return await db.insert(schema.alumni).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -2081,27 +2140,32 @@ export const alumniRouter = {
     )
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
-      return await db.update(alumni).set(updateData).where(eq(alumni.id, id));
+      return await db
+        .update(schema.alumni)
+        .set(updateData)
+        .where(eq(schema.alumni.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
-      return await db.delete(alumni).where(eq(alumni.id, input.id));
+      return await db
+        .delete(schema.alumni)
+        .where(eq(schema.alumni.id, input.id));
     }),
 };
 
 // Audit Logs Router (read-only)
 export const auditLogsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(auditLogs);
+    return await db.select().from(schema.auditLogs);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [log] = await db
         .select()
-        .from(auditLogs)
-        .where(eq(auditLogs.id, input.id));
+        .from(schema.auditLogs)
+        .where(eq(schema.auditLogs.id, input.id));
       return log;
     }),
 };
@@ -2109,15 +2173,15 @@ export const auditLogsRouter = {
 // System Settings Router
 export const systemSettingsRouter = {
   getAll: protectedProcedure.handler(async () => {
-    return await db.select().from(systemSettings);
+    return await db.select().from(schema.systemSettings);
   }),
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       const [setting] = await db
         .select()
-        .from(systemSettings)
-        .where(eq(systemSettings.id, input.id));
+        .from(schema.systemSettings)
+        .where(eq(schema.systemSettings.id, input.id));
       return setting;
     }),
   create: protectedProcedure
@@ -2133,7 +2197,7 @@ export const systemSettingsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(systemSettings).values(input);
+      return await db.insert(schema.systemSettings).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -2151,16 +2215,16 @@ export const systemSettingsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(systemSettings)
+        .update(schema.systemSettings)
         .set(updateData)
-        .where(eq(systemSettings.id, id));
+        .where(eq(schema.systemSettings.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .delete(systemSettings)
-        .where(eq(systemSettings.id, input.id));
+        .delete(schema.systemSettings)
+        .where(eq(schema.systemSettings.id, input.id));
     }),
 };
 
@@ -2169,17 +2233,17 @@ export const notificationsRouter = {
   getAll: protectedProcedure.handler(async () => {
     return await db
       .select()
-      .from(notifications)
-      .orderBy(desc(notifications.createdAt));
+      .from(schema.notifications)
+      .orderBy(desc(schema.notifications.createdAt));
   }),
   getByUserId: protectedProcedure
     .input(z.object({ userId: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
         .select()
-        .from(notifications)
-        .where(eq(notifications.userId, input.userId))
-        .orderBy(desc(notifications.createdAt));
+        .from(schema.notifications)
+        .where(eq(schema.notifications.userId, input.userId))
+        .orderBy(desc(schema.notifications.createdAt));
     }),
   create: protectedProcedure
     .input(
@@ -2194,7 +2258,7 @@ export const notificationsRouter = {
       })
     )
     .handler(async ({ input }) => {
-      return await db.insert(notifications).values(input);
+      return await db.insert(schema.notifications).values(input);
     }),
   update: protectedProcedure
     .input(
@@ -2211,35 +2275,35 @@ export const notificationsRouter = {
     .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
-        .update(notifications)
+        .update(schema.notifications)
         .set(updateData)
-        .where(eq(notifications.id, id));
+        .where(eq(schema.notifications.id, id));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .delete(notifications)
-        .where(eq(notifications.id, input.id));
+        .delete(schema.notifications)
+        .where(eq(schema.notifications.id, input.id));
     }),
   markAsRead: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .update(notifications)
+        .update(schema.notifications)
         .set({ isRead: true, readAt: new Date() })
-        .where(eq(notifications.id, input.id));
+        .where(eq(schema.notifications.id, input.id));
     }),
   markAllAsRead: protectedProcedure
     .input(z.object({ userId: z.string().uuid() }))
     .handler(async ({ input }) => {
       return await db
-        .update(notifications)
+        .update(schema.notifications)
         .set({ isRead: true, readAt: new Date() })
         .where(
           and(
-            eq(notifications.userId, input.userId),
-            eq(notifications.isRead, false)
+            eq(schema.notifications.userId, input.userId),
+            eq(schema.notifications.isRead, false)
           )
         );
     }),
@@ -2250,7 +2314,7 @@ export const rolesRouter = {
     .meta({ requiredPermission: { action: "view", resource: "roles" } })
     .handler(async ({ context }) => {
       await context.hasPermission("view", "roles");
-      return await db.select().from(roles);
+      return await db.select().from(schema.roles);
     }),
 
   create: protectedProcedure
@@ -2266,14 +2330,15 @@ export const rolesRouter = {
       await context.hasPermission("create", "roles");
 
       const { permissionIds, ...roleData } = input;
-      const [role] = await db.insert(roles).values(roleData).returning();
+      const [role] = await db.insert(schema.roles).values(roleData).returning();
 
       if (permissionIds.length > 0) {
-        await db
-          .insert(rolePermissions)
-          .values(
-            permissionIds.map((pid) => ({ roleId: role.id, permissionId: pid }))
-          );
+        await db.insert(schema.rolePermissions).values(
+          permissionIds.map((pid) => ({
+            roleId: schema.role.id,
+            permissionId: pid,
+          }))
+        );
       }
 
       return role;
@@ -2293,11 +2358,11 @@ export const rolesRouter = {
       const { roleId, permissionIds } = input;
 
       await db
-        .delete(rolePermissions)
-        .where(eq(rolePermissions.roleId, roleId));
+        .delete(schema.rolePermissions)
+        .where(eq(schema.rolePermissions.roleId, roleId));
       if (permissionIds.length > 0) {
         await db
-          .insert(rolePermissions)
+          .insert(schema.rolePermissions)
           .values(permissionIds.map((pid) => ({ roleId, permissionId: pid })));
       }
 
@@ -2310,6 +2375,6 @@ export const permissionsRouter = {
     .meta({ requiredPermission: { action: "view", resource: "permissions" } })
     .handler(async ({ context }) => {
       await context.hasPermission("view", "permissions");
-      return await db.select().from(permissions);
+      return await db.select().from(schema.permissions);
     }),
 };
