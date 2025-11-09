@@ -2,7 +2,6 @@ import { getUser } from "@/functions/get-user";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PermissionGuard, usePermission } from "@/components/auth/permission-guard";
 import {
   BookOpen,
   CreditCard,
@@ -28,8 +27,8 @@ export const Route = createFileRoute("/student/")({
 
 function StudentDashboard() {
   const { session } = Route.useRouteContext();
-  const canViewResults = usePermission("view", "results");
-  const canViewPayments = usePermission("view", "payments");
+  const canViewResults = ("view", "results");
+  const canViewPayments = ("view", "payments");
 
   const quickActions = [
     { 

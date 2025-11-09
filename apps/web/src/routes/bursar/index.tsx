@@ -2,7 +2,6 @@ import { createFileRoute, redirect, Link } from "@tanstack/react-router";
 import { getUser } from "@/functions/get-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { usePermission } from "@/components/auth/permission-guard";
 import { DollarSign, CreditCard, TrendingUp, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { orpc } from "@/utils/orpc";
@@ -22,15 +21,11 @@ export const Route = createFileRoute("/bursar/")({
 
 function BursarDashboard() {
   const { session } = Route.useRouteContext();
-  const canViewPayments = usePermission("view", "payments");
 
-  const { data: payments = [] } = useQuery({
-    ...orpc.payments.getAll.queryOptions(),
-    enabled: canViewPayments,
-  });
+  const { data: payments = [] } = useQuery(orpc.payments.getAll.queryOptions());
 
   const totalRevenue = payments.reduce(
-    (sum: number, p: any) => sum + parseFloat(p.amount || "0"),
+    (sum: number, p) => sum + parseFloat(p.amount || "0"),
     0
   );
 

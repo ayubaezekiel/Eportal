@@ -6,20 +6,13 @@ import { protectedProcedure } from "../index";
 
 // Users Router
 export const usersRouter = {
-  getAll: protectedProcedure
-    .meta({ requiredPermission: { action: "view", resource: "users" } })
-    .handler(async ({ context }) => {
-      const hasAccess = await context.hasPermission("view", "users");
-      if (!hasAccess) return;
-      return await db.select().from(schema.user).orderBy(schema.user.createdAt);
-    }),
+  getAll: protectedProcedure.handler(async () => {
+    return await db.select().from(schema.user).orderBy(schema.user.createdAt);
+  }),
 
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .meta({ requiredPermission: { action: "view", resource: "users" } })
-    .handler(async ({ context, input }) => {
-      const hasAccess = await context.hasPermission("view", "users");
-      if (!hasAccess) return;
+    .handler(async ({ input }) => {
       const [record] = await db
         .select()
         .from(schema.user)
@@ -53,11 +46,7 @@ export const usersRouter = {
         roleIds: z.array(z.string().uuid()).optional(),
       })
     )
-    .meta({ requiredPermission: { action: "create", resource: "users" } })
-    .handler(async ({ context, input }) => {
-      const hasAccess = await context.hasPermission("create", "users");
-      if (!hasAccess) return;
-
+    .handler(async ({ input }) => {
       const { roleIds, ...userData } = input;
       const [newUser] = await db
         .insert(schema.user)
@@ -95,11 +84,7 @@ export const usersRouter = {
         roleIds: z.array(z.string().uuid()).optional(),
       })
     )
-    .meta({ requiredPermission: { action: "update", resource: "users" } })
-    .handler(async ({ context, input }) => {
-      const hasAccess = await context.hasPermission("update", "users");
-      if (!hasAccess) return;
-
+    .handler(async ({ input }) => {
       const { id, roleIds, ...updateData } = input;
 
       await db
@@ -123,20 +108,14 @@ export const usersRouter = {
 
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .meta({ requiredPermission: { action: "delete", resource: "users" } })
-    .handler(async ({ context, input }) => {
-      const hasAccess = await context.hasPermission("delete", "users");
-      if (!hasAccess) return;
+    .handler(async ({ input }) => {
       await db.delete(schema.user).where(eq(schema.user.id, input.id));
       return { success: true };
     }),
 
   getRoles: protectedProcedure
     .input(z.object({ userId: z.string().uuid() }))
-    .meta({ requiredPermission: { action: "view", resource: "roles" } })
-    .handler(async ({ context, input }) => {
-      const hasAccess = await context.hasPermission("view", "roles");
-      if (!hasAccess) return;
+    .handler(async ({ input }) => {
       return await db
         .select({ role: schema.roles })
         .from(schema.userRoles)
@@ -588,32 +567,22 @@ export const courseRegistrationsRouter = {
 
 // Results Router
 export const resultsRouter = {
-  getAll: protectedProcedure
-    .meta({ requiredPermission: { action: "view", resource: "results" } })
-    .handler(async ({ context }) => {
-      const hasAccess = await context.hasPermission("view", "results");
-      if (!hasAccess) return;
-      return await db
-        .select()
-        .from(schema.results)
-        .leftJoin(
-          schema.courses,
-          eq(schema.results.courseId, schema.courses.id)
-        )
-        .leftJoin(schema.user, eq(schema.results.studentId, schema.user.id))
-        .leftJoin(
-          schema.academicSessions,
-          eq(schema.results.sessionId, schema.academicSessions.id)
-        )
-        .orderBy(desc(schema.results.createdAt));
-    }),
+  getAll: protectedProcedure.handler(async () => {
+    return await db
+      .select()
+      .from(schema.results)
+      .leftJoin(schema.courses, eq(schema.results.courseId, schema.courses.id))
+      .leftJoin(schema.user, eq(schema.results.studentId, schema.user.id))
+      .leftJoin(
+        schema.academicSessions,
+        eq(schema.results.sessionId, schema.academicSessions.id)
+      )
+      .orderBy(desc(schema.results.createdAt));
+  }),
 
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .meta({ requiredPermission: { action: "view", resource: "results" } })
-    .handler(async ({ context, input }) => {
-      const hasAccess = await context.hasPermission("view", "results");
-      if (!hasAccess) return;
+    .handler(async ({ input }) => {
       const [result] = await db
         .select()
         .from(schema.results)
@@ -653,10 +622,7 @@ export const resultsRouter = {
         attemptNumber: z.number().default(1),
       })
     )
-    .meta({ requiredPermission: { action: "create", resource: "results" } })
     .handler(async ({ context, input }) => {
-      const hasAccess = await context.hasPermission("create", "results");
-      if (!hasAccess) return;
       return await db.insert(schema.results).values({
         ...input,
         uploadedBy: context.userId,
@@ -681,10 +647,7 @@ export const resultsRouter = {
         status: z.string().max(50).optional(),
       })
     )
-    .meta({ requiredPermission: { action: "update", resource: "results" } })
-    .handler(async ({ context, input }) => {
-      const hasAccess = await context.hasPermission("update", "results");
-      if (!hasAccess) return;
+    .handler(async ({ input }) => {
       const { id, ...updateData } = input;
       return await db
         .update(schema.results)
@@ -694,10 +657,7 @@ export const resultsRouter = {
 
   approve: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .meta({ requiredPermission: { action: "approve", resource: "results" } })
     .handler(async ({ context, input }) => {
-      const hasAccess = await context.hasPermission("approve", "results");
-      if (!hasAccess) return;
       return await db
         .update(schema.results)
         .set({
@@ -710,10 +670,7 @@ export const resultsRouter = {
 
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .meta({ requiredPermission: { action: "delete", resource: "results" } })
-    .handler(async ({ context, input }) => {
-      const hasAccess = await context.hasPermission("delete", "results");
-      if (!hasAccess) return;
+    .handler(async ({ input }) => {
       return await db
         .delete(schema.results)
         .where(eq(schema.results.id, input.id));
@@ -721,12 +678,7 @@ export const resultsRouter = {
 
   getByStudent: protectedProcedure
     .input(z.object({ studentId: z.string().uuid() }))
-    .handler(async ({ context, input }) => {
-      // Students can view their own results, others need permission
-      if (context.userId !== input.studentId) {
-        const hasAccess = await context.hasPermission("view", "results");
-        if (!hasAccess) return;
-      }
+    .handler(async ({ input }) => {
       return await db
         .select()
         .from(schema.results)
@@ -2310,12 +2262,9 @@ export const notificationsRouter = {
 };
 
 export const rolesRouter = {
-  getAll: protectedProcedure
-    .meta({ requiredPermission: { action: "view", resource: "roles" } })
-    .handler(async ({ context }) => {
-      await context.hasPermission("view", "roles");
-      return await db.select().from(schema.roles);
-    }),
+  getAll: protectedProcedure.handler(async () => {
+    return await db.select().from(schema.roles);
+  }),
 
   create: protectedProcedure
     .input(
@@ -2325,17 +2274,14 @@ export const rolesRouter = {
         permissionIds: z.array(z.string().uuid()),
       })
     )
-    .meta({ requiredPermission: { action: "create", resource: "roles" } })
-    .handler(async ({ context, input }) => {
-      await context.hasPermission("create", "roles");
-
+    .handler(async ({ input }) => {
       const { permissionIds, ...roleData } = input;
       const [role] = await db.insert(schema.roles).values(roleData).returning();
 
       if (permissionIds.length > 0) {
         await db.insert(schema.rolePermissions).values(
           permissionIds.map((pid) => ({
-            roleId: schema.role.id,
+            roleId: role.id,
             permissionId: pid,
           }))
         );
@@ -2351,10 +2297,7 @@ export const rolesRouter = {
         permissionIds: z.array(z.string().uuid()),
       })
     )
-    .meta({ requiredPermission: { action: "update", resource: "roles" } })
-    .handler(async ({ context, input }) => {
-      await context.hasPermission("update", "roles");
-
+    .handler(async ({ input }) => {
       const { roleId, permissionIds } = input;
 
       await db
@@ -2371,10 +2314,7 @@ export const rolesRouter = {
 };
 
 export const permissionsRouter = {
-  getAll: protectedProcedure
-    .meta({ requiredPermission: { action: "view", resource: "permissions" } })
-    .handler(async ({ context }) => {
-      await context.hasPermission("view", "permissions");
-      return await db.select().from(schema.permissions);
-    }),
+  getAll: protectedProcedure.handler(async () => {
+    return await db.select().from(schema.permissions);
+  }),
 };

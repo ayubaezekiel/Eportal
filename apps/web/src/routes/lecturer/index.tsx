@@ -2,7 +2,6 @@ import { createFileRoute, redirect, Link } from "@tanstack/react-router";
 import { getUser } from "@/functions/get-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PermissionGuard, usePermission } from "@/components/auth/permission-guard";
 import {
   BookOpen,
   Users,
@@ -28,9 +27,6 @@ export const Route = createFileRoute("/lecturer/")({
 
 function LecturerDashboard() {
   const { session } = Route.useRouteContext();
-  const canViewResults = usePermission("view", "results");
-  const canCreateResults = usePermission("create", "results");
-  const canViewAttendance = usePermission("view", "attendance");
 
   // Fetch real data with permission checks
   const { data: courses } = useQuery(orpc.courses.getAll.queryOptions());
@@ -42,7 +38,6 @@ function LecturerDashboard() {
   );
   const { data: results } = useQuery({
     ...orpc.results.getAll.queryOptions(),
-    enabled: canViewResults,
   });
 
   // Calculate lecturer-specific stats
@@ -53,12 +48,15 @@ function LecturerDashboard() {
     courses?.filter((c) => assignedCourseIds.includes(c.id)) || [];
 
   const totalStudents =
-    courseRegistrations?.filter((cr) => assignedCourseIds.includes(cr.courseId))
-      .length || 0;
+    courseRegistrations?.filter((cr) =>
+      assignedCourseIds.includes(cr.results.courseId)
+    ).length || 0;
 
   const pendingResults =
     results?.filter(
-      (r) => assignedCourseIds.includes(r.courseId) && r.status === "draft"
+      (r) =>
+        assignedCourseIds.includes(r.results.courseId) &&
+        r.results.status === "draft"
     ).length || 0;
 
   const quickActions = [
@@ -145,8 +143,9 @@ function LecturerDashboard() {
             {lecturerCourseDetails.length > 0 ? (
               lecturerCourseDetails.map((course) => {
                 const studentCount =
-                  courseRegistrations?.filter((cr) => cr.courseId === course.id)
-                    .length || 0;
+                  courseRegistrations?.filter(
+                    (cr) => cr.course_registrations.courseId === course.id
+                  ).length || 0;
                 return (
                   <div
                     key={course.id}

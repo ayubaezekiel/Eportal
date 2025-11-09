@@ -2,7 +2,6 @@ import { createFileRoute, redirect, Link } from "@tanstack/react-router";
 import { getUser } from "@/functions/get-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { usePermission } from "@/components/auth/permission-guard";
 import { FileText, Users, GraduationCap, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { orpc } from "@/utils/orpc";
@@ -22,11 +21,10 @@ export const Route = createFileRoute("/registrar/")({
 
 function RegistrarDashboard() {
   const { session } = Route.useRouteContext();
-  const canViewUsers = usePermission("view", "users");
+  const canViewUsers = ("view", "users");
 
   const { data: users = [] } = useQuery({
     ...orpc.users.getAll.queryOptions(),
-    enabled: canViewUsers,
   });
 
   const students = users.filter((u: any) => u.userType === "student");

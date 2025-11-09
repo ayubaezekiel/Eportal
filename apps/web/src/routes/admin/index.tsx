@@ -4,28 +4,24 @@ import { getUser } from "@/functions/get-user";
 import { orpc } from "@/utils/orpc";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { formatDistanceToNow } from "date-fns";
 import {
-  PermissionGuard,
-  usePermission,
-} from "@/components/auth/permission-guard";
-import {
+  AlertCircle,
   BarChart3,
+  BookOpen,
   Building,
   Building2,
   Calendar,
-  DollarSign,
-  GraduationCap,
-  Settings,
-  Users,
-  Download,
-  UserPlus,
   CheckCircle,
   Clock,
-  BookOpen,
+  DollarSign,
+  Download,
   FileText,
-  AlertCircle,
+  GraduationCap,
+  Settings,
+  UserPlus,
+  Users,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
@@ -42,14 +38,10 @@ export const Route = createFileRoute("/admin/")({
 
 function AdminDashboard() {
   const { session } = Route.useRouteContext();
-  // const canViewUsers = usePermission("view", "users");
-  // const canViewReports = usePermission("view", "reports");
-  // const canViewSettings = usePermission("view", "settings");
 
   // Fetch real data with permission checks
   const { data: users } = useQuery({
     ...orpc.users.getAll.queryOptions(),
-    // enabled: canViewUsers,
   });
 
   const { data: payments } = useQuery(orpc.payments.getAll.queryOptions());
@@ -164,11 +156,11 @@ function AdminDashboard() {
 
     // Pending course registrations
     const pendingRegistrations = courseRegistrations
-      ?.filter((r) => r.status === "Pending")
+      ?.filter((r) => r.course_registrations.status === "Pending")
       .sort(
         (a, b) =>
-          new Date(`${b.registrationDate}`).getTime() -
-          new Date(`${a.registrationDate}`).getTime()
+          new Date(`${b.course_registrations.registrationDate}`).getTime() -
+          new Date(`${a.course_registrations.registrationDate}`).getTime()
       )
       .slice(0, 2);
 
@@ -176,7 +168,7 @@ function AdminDashboard() {
       activities.push({
         type: "registration",
         message: `Course registration pending approval`,
-        timestamp: new Date(`${reg.registrationDate}`),
+        timestamp: new Date(`${reg.course_registrations.registrationDate}`),
         icon: Clock,
         color: "bg-yellow-500",
       });
@@ -184,11 +176,11 @@ function AdminDashboard() {
 
     // Recent result uploads
     const recentResults = results
-      ?.filter((r) => r.status === "Published")
+      ?.filter((r) => r.results.status === "Published")
       .sort(
         (a, b) =>
-          new Date(b.uploadedAt || b.createdAt).getTime() -
-          new Date(a.uploadedAt || a.createdAt).getTime()
+          new Date(b.results.uploadedAt || b.results.createdAt).getTime() -
+          new Date(a.results.uploadedAt || a.results.createdAt).getTime()
       )
       .slice(0, 2);
 
@@ -196,7 +188,9 @@ function AdminDashboard() {
       activities.push({
         type: "result",
         message: `Results published for a course`,
-        timestamp: new Date(result.uploadedAt || result.createdAt),
+        timestamp: new Date(
+          result.results.uploadedAt || result.results.createdAt
+        ),
         icon: FileText,
         color: "bg-purple-500",
       });
@@ -263,10 +257,12 @@ function AdminDashboard() {
           activeSessions: activeSessions,
           courseRegistrations: courseRegistrations?.length || 0,
           pendingRegistrations:
-            courseRegistrations?.filter((r) => r.status === "Pending").length ||
-            0,
+            courseRegistrations?.filter(
+              (r) => r.course_registrations.status === "Pending"
+            ).length || 0,
           publishedResults:
-            results?.filter((r) => r.status === "Published").length || 0,
+            results?.filter((r) => r.results.status === "Published").length ||
+            0,
         },
         support: {
           totalPetitions: petitions?.length || 0,

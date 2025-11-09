@@ -1,10 +1,10 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { getUser } from "@/functions/get-user";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Plus, Edit } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getUser } from "@/functions/get-user";
 import { orpc } from "@/utils/orpc";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Edit, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/bursar/fees")({
   component: BursarFees,
@@ -20,13 +20,18 @@ export const Route = createFileRoute("/bursar/fees")({
 });
 
 function BursarFees() {
-  const { data: feeStructures = [] } = useQuery(orpc.feeStructures.getAll.queryOptions());
+  const { data: feeStructures = [] } = useQuery(
+    orpc.feeStructures.getAll.queryOptions()
+  );
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Fee Structure Management</h1>
-        <Button><Plus className="mr-2 h-4 w-4" />Add Fee Structure</Button>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Fee Structure
+        </Button>
       </div>
 
       <Card>
@@ -36,14 +41,21 @@ function BursarFees() {
         <CardContent>
           <div className="space-y-4">
             {feeStructures.map((fee: any) => (
-              <div key={fee.id} className="flex justify-between items-center p-4 border rounded-lg">
+              <div
+                key={fee.id}
+                className="flex justify-between items-center p-4 border rounded-lg"
+              >
                 <div>
-                  <h4 className="font-medium">Level {fee.level} - {fee.studyMode}</h4>
+                  <h4 className="font-medium">
+                    Level {fee.level} - {fee.studyMode}
+                  </h4>
                   <p className="text-sm text-muted-foreground">
                     Total: ₦{parseFloat(fee.totalAmount).toLocaleString()}
                   </p>
                 </div>
-                <Button size="sm" variant="outline"><Edit className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline">
+                  <Edit className="h-4 w-4" />
+                </Button>
               </div>
             ))}
           </div>

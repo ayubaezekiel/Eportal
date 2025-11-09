@@ -1,7 +1,3 @@
-import {
-  PermissionGuard,
-  usePermission,
-} from "@/components/auth/permission-guard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getUser } from "@/functions/get-user";
@@ -32,8 +28,6 @@ export const Route = createFileRoute("/dean/")({
 
 function DeanDashboard() {
   const { session } = Route.useRouteContext();
-  const canViewUsers = usePermission("view", "users");
-  const canViewReports = usePermission("view", "reports");
 
   const { data: faculties } = useQuery(orpc.faculties.getAll.queryOptions());
   const { data: departments } = useQuery(
@@ -41,7 +35,6 @@ function DeanDashboard() {
   );
   const { data: users } = useQuery({
     ...orpc.users.getAll.queryOptions(),
-    enabled: canViewUsers,
   });
 
   const facultyDepartments =
@@ -82,19 +75,15 @@ function DeanDashboard() {
           </CardContent>
         </Card>
 
-        <PermissionGuard action="view" resource="users">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Faculty Staff
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{facultyUsers.length}</div>
-            </CardContent>
-          </Card>
-        </PermissionGuard>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Faculty Staff</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{facultyUsers.length}</div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
