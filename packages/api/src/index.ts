@@ -18,6 +18,16 @@ export async function hasPermission(
   action: string,
   resource: string
 ): Promise<boolean> {
+  // Check if user has admin role (admin has all permissions)
+  const adminCheck = await db
+    .select()
+    .from(userRoles)
+    .innerJoin(roles, eq(userRoles.roleId, roles.id))
+    .where(and(eq(userRoles.userId, userId), eq(roles.name, "admin")));
+
+  if (adminCheck.length > 0) return true;
+
+  // Check specific permission
   const result = await db
     .select()
     .from(permissions)
@@ -37,20 +47,44 @@ export async function hasPermission(
   return result.length > 0;
 }
 
+export async function getUserRoles(userId: string) {
+  return await db
+    .select({ role: roles })
+    .from(userRoles)
+    .innerJoin(roles, eq(userRoles.roleId, roles.id))
+    .where(eq(userRoles.userId, userId));
+}
+
 const requireAuth = o.middleware(async ({ context, next }) => {
   if (!context.session?.user) {
-    throw new ORPCError("UNAUTHORIZED");
+    throw new ORPCError("UNAUTHORIZED", "Authentication required");
   }
 
   const userId = context.session.user.id;
+  const userRolesList = await getUserRoles(userId);
+  
   return next({
     context: {
       userId,
+      userRoles: userRolesList,
       hasPermission: (action: string, resource: string) =>
         hasPermission(userId, action, resource),
       session: context.session,
     },
   });
 });
+
+// Permission-based middleware
+export const requirePermission = (action: string, resource: string) =>
+  requireAuth.middleware(async ({ context, next }) => {
+    const hasAccess = await context.hasPermission(action, resource);
+    if (!hasAccess) {
+      throw new ORPCError(
+        "FORBIDDEN", 
+        `Insufficient permissions: ${action}:${resource}`
+      );
+    }
+    return next({ context });
+  });
 
 export const protectedProcedure = publicProcedure.use(requireAuth);

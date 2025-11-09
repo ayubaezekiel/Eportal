@@ -2,6 +2,7 @@ import { getUser } from "@/functions/get-user";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PermissionGuard, usePermission } from "@/components/auth/permission-guard";
 import {
   BookOpen,
   CreditCard,
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/student/")({
     return { session };
   },
   loader: async ({ context }) => {
-    if (!context.session || context.session.user.userType !== "student") {
+    if (!context.session) {
       throw redirect({ to: "/login" });
     }
   },
@@ -27,14 +28,46 @@ export const Route = createFileRoute("/student/")({
 
 function StudentDashboard() {
   const { session } = Route.useRouteContext();
+  const canViewResults = usePermission("view", "results");
+  const canViewPayments = usePermission("view", "payments");
 
   const quickActions = [
-    { title: "Course Registration", icon: BookOpen, href: "/student/courses" },
-    { title: "Check Results", icon: GraduationCap, href: "/student/results" },
-    { title: "Make Payment", icon: CreditCard, href: "/student/payments" },
-    { title: "View Transcript", icon: FileText, href: "/student/transcript" },
-    { title: "Academic Calendar", icon: Calendar, href: "/student/calendar" },
-    { title: "Hostel Application", icon: Bell, href: "/student/hostel" },
+    { 
+      title: "Course Registration", 
+      icon: BookOpen, 
+      href: "/student/courses",
+      permission: { action: "view", resource: "courses" }
+    },
+    { 
+      title: "Check Results", 
+      icon: GraduationCap, 
+      href: "/student/results",
+      permission: { action: "view", resource: "results" }
+    },
+    { 
+      title: "Make Payment", 
+      icon: CreditCard, 
+      href: "/student/payments",
+      permission: { action: "view", resource: "payments" }
+    },
+    { 
+      title: "View Transcript", 
+      icon: FileText, 
+      href: "/student/transcript",
+      permission: { action: "view", resource: "results" }
+    },
+    { 
+      title: "Academic Calendar", 
+      icon: Calendar, 
+      href: "/student/calendar",
+      permission: { action: "view", resource: "dashboard" }
+    },
+    { 
+      title: "Hostel Application", 
+      icon: Bell, 
+      href: "/student/hostel",
+      permission: { action: "view", resource: "dashboard" }
+    },
   ];
 
   return (

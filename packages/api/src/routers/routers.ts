@@ -2,6 +2,7 @@ import { db } from "@Eportal/db";
 import { and, asc, desc, eq } from "drizzle-orm";
 import z from "zod";
 import { protectedProcedure } from "../index";
+import { ORPCError } from "@orpc/server";
 import {
   academicSessions,
   alumni,
@@ -44,7 +45,8 @@ export const usersRouter = {
   getAll: protectedProcedure
     .meta({ requiredPermission: { action: "view", resource: "users" } })
     .handler(async ({ context }) => {
-      await context.hasPermission("view", "users");
+      const hasAccess = await context.hasPermission("view", "users");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
       return await db.select().from(user).orderBy(user.createdAt);
     }),
 
@@ -52,7 +54,8 @@ export const usersRouter = {
     .input(z.object({ id: z.string().uuid() }))
     .meta({ requiredPermission: { action: "view", resource: "users" } })
     .handler(async ({ context, input }) => {
-      await context.hasPermission("view", "users");
+      const hasAccess = await context.hasPermission("view", "users");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
       const [record] = await db
         .select()
         .from(user)
@@ -64,7 +67,7 @@ export const usersRouter = {
     .input(
       z.object({
         email: z.string().email(),
-        password: z.string().min(8),
+        name: z.string(),
         userType: z.enum([
           "student",
           "lecturer",
@@ -74,13 +77,22 @@ export const usersRouter = {
           "registrar",
           "bursar",
         ]),
-        // ... other fields
+        firstName: z.string(),
+        lastName: z.string(),
+        gender: z.string(),
+        dateOfBirth: z.string(),
+        phoneNumber: z.string(),
+        stateOfOrigin: z.string(),
+        lgaOfOrigin: z.string(),
+        permanentAddress: z.string(),
+        contactAddress: z.string(),
         roleIds: z.array(z.string().uuid()).optional(),
       })
     )
     .meta({ requiredPermission: { action: "create", resource: "users" } })
     .handler(async ({ context, input }) => {
-      await context.hasPermission("create", "users");
+      const hasAccess = await context.hasPermission("create", "users");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
 
       const { roleIds, ...userData } = input;
       const [newUser] = await db.insert(user).values(userData).returning();
@@ -98,13 +110,24 @@ export const usersRouter = {
     .input(
       z.object({
         id: z.string().uuid(),
-        // ... other fields
+        email: z.string().email().optional(),
+        name: z.string().optional(),
+        userType: z.enum([
+          "student",
+          "lecturer",
+          "admin",
+          "hod",
+          "dean",
+          "registrar",
+          "bursar",
+        ]).optional(),
         roleIds: z.array(z.string().uuid()).optional(),
       })
     )
     .meta({ requiredPermission: { action: "update", resource: "users" } })
     .handler(async ({ context, input }) => {
-      await context.hasPermission("update", "users");
+      const hasAccess = await context.hasPermission("update", "users");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
 
       const { id, roleIds, ...updateData } = input;
 
@@ -126,16 +149,18 @@ export const usersRouter = {
     .input(z.object({ id: z.string().uuid() }))
     .meta({ requiredPermission: { action: "delete", resource: "users" } })
     .handler(async ({ context, input }) => {
-      await context.hasPermission("delete", "users");
+      const hasAccess = await context.hasPermission("delete", "users");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
       await db.delete(user).where(eq(user.id, input.id));
       return { success: true };
     }),
 
-  // NEW: Get user roles
   getRoles: protectedProcedure
     .input(z.object({ userId: z.string().uuid() }))
     .meta({ requiredPermission: { action: "view", resource: "roles" } })
-    .handler(async ({ input }) => {
+    .handler(async ({ context, input }) => {
+      const hasAccess = await context.hasPermission("view", "roles");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
       return await db
         .select({ role: roles })
         .from(userRoles)
@@ -556,19 +581,26 @@ export const courseRegistrationsRouter = {
 
 // Results Router
 export const resultsRouter = {
-  getAll: protectedProcedure.handler(async () => {
-    return await db
-      .select()
-      .from(results)
-      .leftJoin(courses, eq(results.courseId, courses.id))
-      .leftJoin(user, eq(results.studentId, user.id))
-      .leftJoin(academicSessions, eq(results.sessionId, academicSessions.id))
-      .orderBy(desc(results.createdAt));
-  }),
+  getAll: protectedProcedure
+    .meta({ requiredPermission: { action: "view", resource: "results" } })
+    .handler(async ({ context }) => {
+      const hasAccess = await context.hasPermission("view", "results");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      return await db
+        .select()
+        .from(results)
+        .leftJoin(courses, eq(results.courseId, courses.id))
+        .leftJoin(user, eq(results.studentId, user.id))
+        .leftJoin(academicSessions, eq(results.sessionId, academicSessions.id))
+        .orderBy(desc(results.createdAt));
+    }),
 
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .handler(async ({ input }) => {
+    .meta({ requiredPermission: { action: "view", resource: "results" } })
+    .handler(async ({ context, input }) => {
+      const hasAccess = await context.hasPermission("view", "results");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
       const [result] = await db
         .select()
         .from(results)
@@ -577,76 +609,6 @@ export const resultsRouter = {
         .leftJoin(academicSessions, eq(results.sessionId, academicSessions.id))
         .where(eq(results.id, input.id));
       return result;
-    }),
-
-  getByStudent: protectedProcedure
-    .input(z.object({ studentId: z.string().uuid() }))
-    .handler(async ({ input }) => {
-      return await db
-        .select()
-        .from(results)
-        .leftJoin(courses, eq(results.courseId, courses.id))
-        .leftJoin(user, eq(results.studentId, user.id))
-        .leftJoin(academicSessions, eq(results.sessionId, academicSessions.id))
-        .where(eq(results.studentId, input.studentId))
-        .orderBy(desc(results.createdAt));
-    }),
-
-  getByStudentAndSession: protectedProcedure
-    .input(
-      z.object({
-        studentId: z.string().uuid(),
-        sessionId: z.string().uuid(),
-        semester: z.string().optional(),
-      })
-    )
-    .handler(async ({ input }) => {
-      const conditions = [
-        eq(results.studentId, input.studentId),
-        eq(results.sessionId, input.sessionId),
-      ];
-
-      if (input.semester) {
-        conditions.push(eq(results.semester, input.semester));
-      }
-
-      return await db
-        .select()
-        .from(results)
-        .where(and(...conditions))
-        .orderBy(desc(results.createdAt));
-    }),
-
-  getByCourse: protectedProcedure
-    .input(
-      z.object({
-        courseId: z.string().uuid(),
-        sessionId: z.string().uuid(),
-        semester: z.string(),
-      })
-    )
-    .handler(async ({ input }) => {
-      return await db
-        .select()
-        .from(results)
-        .where(
-          and(
-            eq(results.courseId, input.courseId),
-            eq(results.sessionId, input.sessionId),
-            eq(results.semester, input.semester)
-          )
-        )
-        .orderBy(asc(results.studentId));
-    }),
-
-  getByStatus: protectedProcedure
-    .input(z.object({ status: z.string() }))
-    .handler(async ({ input }) => {
-      return await db
-        .select()
-        .from(results)
-        .where(eq(results.status, input.status))
-        .orderBy(desc(results.createdAt));
     }),
 
   create: protectedProcedure
@@ -667,14 +629,19 @@ export const resultsRouter = {
         grade: z.string().max(5).optional(),
         gradePoint: z.string().optional(),
         remark: z.string().max(50).optional(),
-        uploadedBy: z.string().uuid().optional(),
         status: z.string().max(50).default("Draft"),
         isCarryOver: z.boolean().default(false),
         attemptNumber: z.number().default(1),
       })
     )
-    .handler(async ({ input }) => {
-      return await db.insert(results).values(input);
+    .meta({ requiredPermission: { action: "create", resource: "results" } })
+    .handler(async ({ context, input }) => {
+      const hasAccess = await context.hasPermission("create", "results");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      return await db.insert(results).values({
+        ...input,
+        uploadedBy: context.userId,
+      });
     }),
 
   update: protectedProcedure
@@ -693,19 +660,57 @@ export const resultsRouter = {
         gradePoint: z.string().optional(),
         remark: z.string().max(50).optional(),
         status: z.string().max(50).optional(),
-        verifiedBy: z.string().uuid().optional(),
-        approvedBy: z.string().uuid().optional(),
       })
     )
-    .handler(async ({ input }) => {
+    .meta({ requiredPermission: { action: "update", resource: "results" } })
+    .handler(async ({ context, input }) => {
+      const hasAccess = await context.hasPermission("update", "results");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
       const { id, ...updateData } = input;
       return await db.update(results).set(updateData).where(eq(results.id, id));
     }),
 
+  approve: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .meta({ requiredPermission: { action: "approve", resource: "results" } })
+    .handler(async ({ context, input }) => {
+      const hasAccess = await context.hasPermission("approve", "results");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      return await db
+        .update(results)
+        .set({
+          status: "Approved",
+          approvedBy: context.userId,
+          approvedAt: new Date(),
+        })
+        .where(eq(results.id, input.id));
+    }),
+
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .handler(async ({ input }) => {
+    .meta({ requiredPermission: { action: "delete", resource: "results" } })
+    .handler(async ({ context, input }) => {
+      const hasAccess = await context.hasPermission("delete", "results");
+      if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
       return await db.delete(results).where(eq(results.id, input.id));
+    }),
+
+  getByStudent: protectedProcedure
+    .input(z.object({ studentId: z.string().uuid() }))
+    .handler(async ({ context, input }) => {
+      // Students can view their own results, others need permission
+      if (context.userId !== input.studentId) {
+        const hasAccess = await context.hasPermission("view", "results");
+        if (!hasAccess) throw new ORPCError("FORBIDDEN", "Insufficient permissions");
+      }
+      return await db
+        .select()
+        .from(results)
+        .leftJoin(courses, eq(results.courseId, courses.id))
+        .leftJoin(user, eq(results.studentId, user.id))
+        .leftJoin(academicSessions, eq(results.sessionId, academicSessions.id))
+        .where(eq(results.studentId, input.studentId))
+        .orderBy(desc(results.createdAt));
     }),
 };
 

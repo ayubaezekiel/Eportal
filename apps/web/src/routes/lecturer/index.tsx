@@ -2,6 +2,7 @@ import { createFileRoute, redirect, Link } from "@tanstack/react-router";
 import { getUser } from "@/functions/get-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PermissionGuard, usePermission } from "@/components/auth/permission-guard";
 import {
   BookOpen,
   Users,
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/lecturer/")({
     return { session };
   },
   loader: async ({ context }) => {
-    if (!context.session || context.session.user.userType !== "lecturer") {
+    if (!context.session) {
       throw redirect({ to: "/login" });
     }
   },
@@ -27,8 +28,11 @@ export const Route = createFileRoute("/lecturer/")({
 
 function LecturerDashboard() {
   const { session } = Route.useRouteContext();
+  const canViewResults = usePermission("view", "results");
+  const canCreateResults = usePermission("create", "results");
+  const canViewAttendance = usePermission("view", "attendance");
 
-  // Fetch real data
+  // Fetch real data with permission checks
   const { data: courses } = useQuery(orpc.courses.getAll.queryOptions());
   const { data: courseAllocations } = useQuery(
     orpc.courseAllocation.getAll.queryOptions()
@@ -36,7 +40,10 @@ function LecturerDashboard() {
   const { data: courseRegistrations } = useQuery(
     orpc.courseRegistrations.getAll.queryOptions()
   );
-  const { data: results } = useQuery(orpc.results.getAll.queryOptions());
+  const { data: results } = useQuery({
+    ...orpc.results.getAll.queryOptions(),
+    enabled: canViewResults,
+  });
 
   // Calculate lecturer-specific stats
   const lecturerCourses =

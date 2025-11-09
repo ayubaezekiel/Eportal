@@ -6,10 +6,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { orpc } from "@/utils/orpc";
 
-interface Permission {
+interface Role {
   id: string;
-  action: string;
-  resource: string;
+  name: string;
   description?: string;
 }
 
@@ -20,25 +19,25 @@ interface UserPermissionFormProps {
 export function UserPermissionForm({ userId }: UserPermissionFormProps) {
   const queryClient = useQueryClient();
 
-  const { data: permissions = [] } = useQuery(
-    orpc.permissions.getAll.queryOptions()
-  );
-
-  const { data: userRoles } = useQuery(
-    orpc.roles.getAll.queryOptions({ input: {} })
+  const { data: allRoles = [] } = useQuery(orpc.roles.getAll.queryOptions());
+  
+  const { data: userRoles = [] } = useQuery(
+    orpc.users.getRoles.queryOptions({ input: { userId } })
   );
 
   const mutation = useMutation({
     mutationFn: (data: { roleIds: string[] }) =>
-      api.patch(`/users/${userId}/roles`, data),
+      orpc.users.update.mutate({ input: { id: userId, roleIds: data.roleIds } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-roles", userId] });
     },
   });
 
+  const currentRoleIds = userRoles.map((ur: any) => ur.role.id);
+
   const form = useForm({
     defaultValues: {
-      roleIds: userRoles?.map((r: any) => r.roleId) || [],
+      roleIds: currentRoleIds,
     },
     onSubmit: async ({ value }) => {
       mutation.mutate({ roleIds: value.roleIds });
@@ -60,42 +59,39 @@ export function UserPermissionForm({ userId }: UserPermissionFormProps) {
           className="space-y-6"
         >
           <div className="space-y-4">
-            {["admin", "hod", "lecturer", "student"].map((roleName) => {
-              const role = permissions.find((p) => p.resource === roleName);
-              return (
-                <form.Field
-                  key={roleName}
-                  name="roleIds"
-                  children={(field) => (
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <Label
-                          htmlFor={roleName}
-                          className="text-base font-medium"
-                        >
-                          {roleName.charAt(0).toUpperCase() + roleName.slice(1)}
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                          {getRoleDescription(roleName)}
-                        </p>
-                      </div>
-                      <Switch
-                        id={roleName}
-                        checked={field.state.value.includes(roleName)}
-                        onCheckedChange={(checked) => {
-                          const current = field.state.value;
-                          field.setValue(
-                            checked
-                              ? [...current, roleName]
-                              : current.filter((id: string) => id !== roleName)
-                          );
-                        }}
-                      />
+            {allRoles.map((role: Role) => (
+              <form.Field
+                key={role.id}
+                name="roleIds"
+                children={(field) => (
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <Label
+                        htmlFor={role.id}
+                        className="text-base font-medium"
+                      >
+                        {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        {role.description || getRoleDescription(role.name)}
+                      </p>
                     </div>
-                  )}
-                />
-              );
-            })}
+                    <Switch
+                      id={role.id}
+                      checked={field.state.value.includes(role.id)}
+                      onCheckedChange={(checked) => {
+                        const current = field.state.value;
+                        field.setValue(
+                          checked
+                            ? [...current, role.id]
+                            : current.filter((id: string) => id !== role.id)
+                        );
+                      }}
+                    />
+                  </div>
+                )}
+              />
+            ))}
           </div>
 
           <Button type="submit" disabled={mutation.isPending}>
@@ -108,11 +104,11 @@ export function UserPermissionForm({ userId }: UserPermissionFormProps) {
 }
 
 function getRoleDescription(role: string) {
-  const desc: Record<string, string> = {
+  const descriptions: Record<string, string> = {
     admin: "Full access to all features",
     hod: "Manage department users, approve results",
     lecturer: "Upload results, mark attendance",
     student: "View personal results and fees",
   };
-  return desc[role] || "";
+  return descriptions[role] || "";
 }

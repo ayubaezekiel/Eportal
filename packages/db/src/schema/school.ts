@@ -903,24 +903,36 @@ export const permissions = pgTable("permissions", {
 });
 
 // Role-Permission Junction
-export const rolePermissions = pgTable("role_permissions", {
-  roleId: uuid("role_id")
-    .notNull()
-    .references(() => roles.id, { onDelete: "cascade" }),
-  permissionId: uuid("permission_id")
-    .notNull()
-    .references(() => permissions.id, { onDelete: "cascade" }),
-});
+export const rolePermissions = pgTable(
+  "role_permissions",
+  {
+    roleId: uuid("role_id")
+      .notNull()
+      .references(() => roles.id, { onDelete: "cascade" }),
+    permissionId: uuid("permission_id")
+      .notNull()
+      .references(() => permissions.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    pk: { primaryKey: [table.roleId, table.permissionId] },
+  })
+);
 
 // User-Role Junction
-export const userRoles = pgTable("user_roles", {
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  roleId: uuid("role_id")
-    .notNull()
-    .references(() => roles.id, { onDelete: "cascade" }),
-});
+export const userRoles = pgTable(
+  "user_roles",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    roleId: uuid("role_id")
+      .notNull()
+      .references(() => roles.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    pk: { primaryKey: [table.userId, table.roleId] },
+  })
+);
 
 // ============================================
 // RELATIONS

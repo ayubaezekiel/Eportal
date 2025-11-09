@@ -207,12 +207,7 @@ export const auth = betterAuth({
         required: false,
         input: true,
       },
-      permissions: {
-        type: "string", // Store as JSON string
-        required: false,
-        defaultValue: "{}",
-        input: true,
-      },
+
       // Academic Status
       isOnProbation: {
         type: "boolean",

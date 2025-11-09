@@ -4,6 +4,7 @@ import { getUser } from "@/functions/get-user";
 import { orpc } from "@/utils/orpc";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { PermissionGuard, usePermission } from "@/components/auth/permission-guard";
 import {
   BarChart3,
   Building,
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/admin/")({
     return { session };
   },
   loader: async ({ context }) => {
-    if (!context.session || context.session.user.userType !== "admin") {
+    if (!context.session) {
       throw redirect({ to: "/login" });
     }
   },
@@ -38,9 +39,16 @@ export const Route = createFileRoute("/admin/")({
 
 function AdminDashboard() {
   const { session } = Route.useRouteContext();
+  const canViewUsers = usePermission("view", "users");
+  const canViewReports = usePermission("view", "reports");
+  const canViewSettings = usePermission("view", "settings");
 
-  // Fetch real data
-  const { data: users } = useQuery(orpc.users.getAll.queryOptions());
+  // Fetch real data with permission checks
+  const { data: users } = useQuery({
+    ...orpc.users.getAll.queryOptions(),
+    enabled: canViewUsers,
+  });
+  
   const { data: payments } = useQuery(orpc.payments.getAll.queryOptions());
   const { data: academicSessions } = useQuery(
     orpc.academicSessions.getAll.queryOptions()
@@ -92,6 +100,7 @@ function AdminDashboard() {
     { title: "Manage Users", icon: Users, href: "/admin/users" },
     { title: "Academic Sessions", icon: Calendar, href: "/admin/sessions" },
     { title: "Fee Management", icon: DollarSign, href: "/admin/fees" },
+    { title: "Courses", icon: BookOpen, href: "/admin/courses" },
     { title: "Reports", icon: BarChart3, href: "/admin/reports" },
     { title: "System Settings", icon: Settings, href: "/admin/settings" },
     { title: "Faculties", icon: Building, href: "/admin/faculties" },

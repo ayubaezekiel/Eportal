@@ -8,7 +8,13 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { Textarea } from "../ui/textarea";
 
 const petitionSchema = z.object({
@@ -30,8 +36,13 @@ interface PetitionFormProps {
   onSubmit?: (data: z.infer<typeof petitionSchema>) => Promise<void>;
 }
 
-export const PetitionForm = ({ mode, petition, onSubmit }: PetitionFormProps) => {
-  const createMutation = useMutation(orpc.petitions.create.mutationOptions());  const updateMutation = useMutation(orpc.petitions.update.mutationOptions());
+export const PetitionForm = ({
+  mode,
+  petition,
+  onSubmit,
+}: PetitionFormProps) => {
+  const createMutation = useMutation(orpc.petitions.create.mutationOptions());
+  const updateMutation = useMutation(orpc.petitions.update.mutationOptions());
   const form = useForm({
     defaultValues: petition || {
       studentId: "",
@@ -68,7 +79,13 @@ export const PetitionForm = ({ mode, petition, onSubmit }: PetitionFormProps) =>
     if (mode === "update" && petition) form.reset(petition);
   }, [petition, mode]);
 
-  const petitionTypes = ["academic", "financial", "disciplinary", "administrative", "other"];
+  const petitionTypes = [
+    "academic",
+    "financial",
+    "disciplinary",
+    "administrative",
+    "other",
+  ];
   const statusOptions = ["pending", "under_review", "approved", "rejected"];
 
   return (
@@ -79,8 +96,17 @@ export const PetitionForm = ({ mode, petition, onSubmit }: PetitionFormProps) =>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={(e) => { e.preventDefault(); form.handleSubmit(); }} className="space-y-6">
-          <form.Field name="studentId" validators={{ onChange: petitionSchema.shape.studentId }}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+          className="space-y-6"
+        >
+          <form.Field
+            name="studentId"
+            validators={{ onChange: petitionSchema.shape.studentId }}
+          >
             {(field) => (
               <div className="space-y-2">
                 <Label>Student ID *</Label>
@@ -96,13 +122,18 @@ export const PetitionForm = ({ mode, petition, onSubmit }: PetitionFormProps) =>
               {(field) => (
                 <div className="space-y-2">
                   <Label>Petition Type *</Label>
-                  <Select value={field.state.value} onValueChange={field.handleChange}>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={field.handleChange}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
                       {petitionTypes.map((type) => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -113,13 +144,18 @@ export const PetitionForm = ({ mode, petition, onSubmit }: PetitionFormProps) =>
               {(field) => (
                 <div className="space-y-2">
                   <Label>Status *</Label>
-                  <Select value={field.state.value} onValueChange={field.handleChange}>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={field.handleChange}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
                       {statusOptions.map((status) => (
-                        <SelectItem key={status} value={status}>{status.replace('_', ' ')}</SelectItem>
+                        <SelectItem key={status} value={status}>
+                          {status.replace("_", " ")}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -127,7 +163,10 @@ export const PetitionForm = ({ mode, petition, onSubmit }: PetitionFormProps) =>
               )}
             </form.Field>
           </div>
-          <form.Field name="subject" validators={{ onChange: petitionSchema.shape.subject }}>
+          <form.Field
+            name="subject"
+            validators={{ onChange: petitionSchema.shape.subject }}
+          >
             {(field) => (
               <div className="space-y-2">
                 <Label>Subject *</Label>
@@ -138,7 +177,10 @@ export const PetitionForm = ({ mode, petition, onSubmit }: PetitionFormProps) =>
               </div>
             )}
           </form.Field>
-          <form.Field name="content" validators={{ onChange: petitionSchema.shape.content }}>
+          <form.Field
+            name="content"
+            validators={{ onChange: petitionSchema.shape.content }}
+          >
             {(field) => (
               <div className="space-y-2">
                 <Label>Content *</Label>
@@ -151,7 +193,11 @@ export const PetitionForm = ({ mode, petition, onSubmit }: PetitionFormProps) =>
             )}
           </form.Field>
           <div className="flex gap-4">
-            <Button type="button" variant="outline" onClick={() => form.reset()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => form.reset()}
+            >
               {mode === "create" ? "Clear Form" : "Cancel"}
             </Button>
             <Button type="submit">

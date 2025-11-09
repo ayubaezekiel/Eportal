@@ -16,15 +16,28 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ApplyRouteImport } from './routes/apply'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudentIndexRouteImport } from './routes/student/index'
+import { Route as RegistrarIndexRouteImport } from './routes/registrar/index'
 import { Route as LecturerIndexRouteImport } from './routes/lecturer/index'
+import { Route as HodIndexRouteImport } from './routes/hod/index'
+import { Route as DeanIndexRouteImport } from './routes/dean/index'
+import { Route as BursarIndexRouteImport } from './routes/bursar/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as StudentPaymentsRouteImport } from './routes/student/payments'
 import { Route as StudentCoursesRouteImport } from './routes/student/courses'
+import { Route as RegistrarTranscriptsRouteImport } from './routes/registrar/transcripts'
+import { Route as RegistrarStudentsRouteImport } from './routes/registrar/students'
 import { Route as LecturerStudentsRouteImport } from './routes/lecturer/students'
 import { Route as LecturerResultsRouteImport } from './routes/lecturer/results'
 import { Route as LecturerReportsRouteImport } from './routes/lecturer/reports'
 import { Route as LecturerCoursesRouteImport } from './routes/lecturer/courses'
 import { Route as LecturerAttendanceRouteImport } from './routes/lecturer/attendance'
+import { Route as HodStaffRouteImport } from './routes/hod/staff'
+import { Route as HodResultsRouteImport } from './routes/hod/results'
+import { Route as HodCoursesRouteImport } from './routes/hod/courses'
+import { Route as DeanResultsRouteImport } from './routes/dean/results'
+import { Route as DeanCoursesRouteImport } from './routes/dean/courses'
+import { Route as BursarPaymentsRouteImport } from './routes/bursar/payments'
+import { Route as BursarFeesRouteImport } from './routes/bursar/fees'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminSessionsRouteImport } from './routes/admin/sessions'
@@ -72,9 +85,29 @@ const StudentIndexRoute = StudentIndexRouteImport.update({
   path: '/student/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RegistrarIndexRoute = RegistrarIndexRouteImport.update({
+  id: '/registrar/',
+  path: '/registrar/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LecturerIndexRoute = LecturerIndexRouteImport.update({
   id: '/lecturer/',
   path: '/lecturer/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HodIndexRoute = HodIndexRouteImport.update({
+  id: '/hod/',
+  path: '/hod/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeanIndexRoute = DeanIndexRouteImport.update({
+  id: '/dean/',
+  path: '/dean/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BursarIndexRoute = BursarIndexRouteImport.update({
+  id: '/bursar/',
+  path: '/bursar/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -90,6 +123,16 @@ const StudentPaymentsRoute = StudentPaymentsRouteImport.update({
 const StudentCoursesRoute = StudentCoursesRouteImport.update({
   id: '/student/courses',
   path: '/student/courses',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistrarTranscriptsRoute = RegistrarTranscriptsRouteImport.update({
+  id: '/registrar/transcripts',
+  path: '/registrar/transcripts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistrarStudentsRoute = RegistrarStudentsRouteImport.update({
+  id: '/registrar/students',
+  path: '/registrar/students',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LecturerStudentsRoute = LecturerStudentsRouteImport.update({
@@ -115,6 +158,41 @@ const LecturerCoursesRoute = LecturerCoursesRouteImport.update({
 const LecturerAttendanceRoute = LecturerAttendanceRouteImport.update({
   id: '/lecturer/attendance',
   path: '/lecturer/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HodStaffRoute = HodStaffRouteImport.update({
+  id: '/hod/staff',
+  path: '/hod/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HodResultsRoute = HodResultsRouteImport.update({
+  id: '/hod/results',
+  path: '/hod/results',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HodCoursesRoute = HodCoursesRouteImport.update({
+  id: '/hod/courses',
+  path: '/hod/courses',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeanResultsRoute = DeanResultsRouteImport.update({
+  id: '/dean/results',
+  path: '/dean/results',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeanCoursesRoute = DeanCoursesRouteImport.update({
+  id: '/dean/courses',
+  path: '/dean/courses',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BursarPaymentsRoute = BursarPaymentsRouteImport.update({
+  id: '/bursar/payments',
+  path: '/bursar/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BursarFeesRoute = BursarFeesRouteImport.update({
+  id: '/bursar/fees',
+  path: '/bursar/fees',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -188,15 +266,28 @@ export interface FileRoutesByFullPath {
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/bursar/fees': typeof BursarFeesRoute
+  '/bursar/payments': typeof BursarPaymentsRoute
+  '/dean/courses': typeof DeanCoursesRoute
+  '/dean/results': typeof DeanResultsRoute
+  '/hod/courses': typeof HodCoursesRoute
+  '/hod/results': typeof HodResultsRoute
+  '/hod/staff': typeof HodStaffRoute
   '/lecturer/attendance': typeof LecturerAttendanceRoute
   '/lecturer/courses': typeof LecturerCoursesRoute
   '/lecturer/reports': typeof LecturerReportsRoute
   '/lecturer/results': typeof LecturerResultsRoute
   '/lecturer/students': typeof LecturerStudentsRoute
+  '/registrar/students': typeof RegistrarStudentsRoute
+  '/registrar/transcripts': typeof RegistrarTranscriptsRoute
   '/student/courses': typeof StudentCoursesRoute
   '/student/payments': typeof StudentPaymentsRoute
   '/admin': typeof AdminIndexRoute
+  '/bursar': typeof BursarIndexRoute
+  '/dean': typeof DeanIndexRoute
+  '/hod': typeof HodIndexRoute
   '/lecturer': typeof LecturerIndexRoute
+  '/registrar': typeof RegistrarIndexRoute
   '/student': typeof StudentIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
@@ -217,15 +308,28 @@ export interface FileRoutesByTo {
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/bursar/fees': typeof BursarFeesRoute
+  '/bursar/payments': typeof BursarPaymentsRoute
+  '/dean/courses': typeof DeanCoursesRoute
+  '/dean/results': typeof DeanResultsRoute
+  '/hod/courses': typeof HodCoursesRoute
+  '/hod/results': typeof HodResultsRoute
+  '/hod/staff': typeof HodStaffRoute
   '/lecturer/attendance': typeof LecturerAttendanceRoute
   '/lecturer/courses': typeof LecturerCoursesRoute
   '/lecturer/reports': typeof LecturerReportsRoute
   '/lecturer/results': typeof LecturerResultsRoute
   '/lecturer/students': typeof LecturerStudentsRoute
+  '/registrar/students': typeof RegistrarStudentsRoute
+  '/registrar/transcripts': typeof RegistrarTranscriptsRoute
   '/student/courses': typeof StudentCoursesRoute
   '/student/payments': typeof StudentPaymentsRoute
   '/admin': typeof AdminIndexRoute
+  '/bursar': typeof BursarIndexRoute
+  '/dean': typeof DeanIndexRoute
+  '/hod': typeof HodIndexRoute
   '/lecturer': typeof LecturerIndexRoute
+  '/registrar': typeof RegistrarIndexRoute
   '/student': typeof StudentIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
@@ -247,15 +351,28 @@ export interface FileRoutesById {
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/bursar/fees': typeof BursarFeesRoute
+  '/bursar/payments': typeof BursarPaymentsRoute
+  '/dean/courses': typeof DeanCoursesRoute
+  '/dean/results': typeof DeanResultsRoute
+  '/hod/courses': typeof HodCoursesRoute
+  '/hod/results': typeof HodResultsRoute
+  '/hod/staff': typeof HodStaffRoute
   '/lecturer/attendance': typeof LecturerAttendanceRoute
   '/lecturer/courses': typeof LecturerCoursesRoute
   '/lecturer/reports': typeof LecturerReportsRoute
   '/lecturer/results': typeof LecturerResultsRoute
   '/lecturer/students': typeof LecturerStudentsRoute
+  '/registrar/students': typeof RegistrarStudentsRoute
+  '/registrar/transcripts': typeof RegistrarTranscriptsRoute
   '/student/courses': typeof StudentCoursesRoute
   '/student/payments': typeof StudentPaymentsRoute
   '/admin/': typeof AdminIndexRoute
+  '/bursar/': typeof BursarIndexRoute
+  '/dean/': typeof DeanIndexRoute
+  '/hod/': typeof HodIndexRoute
   '/lecturer/': typeof LecturerIndexRoute
+  '/registrar/': typeof RegistrarIndexRoute
   '/student/': typeof StudentIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
@@ -278,15 +395,28 @@ export interface FileRouteTypes {
     | '/admin/sessions'
     | '/admin/settings'
     | '/admin/users'
+    | '/bursar/fees'
+    | '/bursar/payments'
+    | '/dean/courses'
+    | '/dean/results'
+    | '/hod/courses'
+    | '/hod/results'
+    | '/hod/staff'
     | '/lecturer/attendance'
     | '/lecturer/courses'
     | '/lecturer/reports'
     | '/lecturer/results'
     | '/lecturer/students'
+    | '/registrar/students'
+    | '/registrar/transcripts'
     | '/student/courses'
     | '/student/payments'
     | '/admin'
+    | '/bursar'
+    | '/dean'
+    | '/hod'
     | '/lecturer'
+    | '/registrar'
     | '/student'
     | '/api/auth/$'
     | '/api/rpc/$'
@@ -307,15 +437,28 @@ export interface FileRouteTypes {
     | '/admin/sessions'
     | '/admin/settings'
     | '/admin/users'
+    | '/bursar/fees'
+    | '/bursar/payments'
+    | '/dean/courses'
+    | '/dean/results'
+    | '/hod/courses'
+    | '/hod/results'
+    | '/hod/staff'
     | '/lecturer/attendance'
     | '/lecturer/courses'
     | '/lecturer/reports'
     | '/lecturer/results'
     | '/lecturer/students'
+    | '/registrar/students'
+    | '/registrar/transcripts'
     | '/student/courses'
     | '/student/payments'
     | '/admin'
+    | '/bursar'
+    | '/dean'
+    | '/hod'
     | '/lecturer'
+    | '/registrar'
     | '/student'
     | '/api/auth/$'
     | '/api/rpc/$'
@@ -336,15 +479,28 @@ export interface FileRouteTypes {
     | '/admin/sessions'
     | '/admin/settings'
     | '/admin/users'
+    | '/bursar/fees'
+    | '/bursar/payments'
+    | '/dean/courses'
+    | '/dean/results'
+    | '/hod/courses'
+    | '/hod/results'
+    | '/hod/staff'
     | '/lecturer/attendance'
     | '/lecturer/courses'
     | '/lecturer/reports'
     | '/lecturer/results'
     | '/lecturer/students'
+    | '/registrar/students'
+    | '/registrar/transcripts'
     | '/student/courses'
     | '/student/payments'
     | '/admin/'
+    | '/bursar/'
+    | '/dean/'
+    | '/hod/'
     | '/lecturer/'
+    | '/registrar/'
     | '/student/'
     | '/api/auth/$'
     | '/api/rpc/$'
@@ -366,15 +522,28 @@ export interface RootRouteChildren {
   AdminSessionsRoute: typeof AdminSessionsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  BursarFeesRoute: typeof BursarFeesRoute
+  BursarPaymentsRoute: typeof BursarPaymentsRoute
+  DeanCoursesRoute: typeof DeanCoursesRoute
+  DeanResultsRoute: typeof DeanResultsRoute
+  HodCoursesRoute: typeof HodCoursesRoute
+  HodResultsRoute: typeof HodResultsRoute
+  HodStaffRoute: typeof HodStaffRoute
   LecturerAttendanceRoute: typeof LecturerAttendanceRoute
   LecturerCoursesRoute: typeof LecturerCoursesRoute
   LecturerReportsRoute: typeof LecturerReportsRoute
   LecturerResultsRoute: typeof LecturerResultsRoute
   LecturerStudentsRoute: typeof LecturerStudentsRoute
+  RegistrarStudentsRoute: typeof RegistrarStudentsRoute
+  RegistrarTranscriptsRoute: typeof RegistrarTranscriptsRoute
   StudentCoursesRoute: typeof StudentCoursesRoute
   StudentPaymentsRoute: typeof StudentPaymentsRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  BursarIndexRoute: typeof BursarIndexRoute
+  DeanIndexRoute: typeof DeanIndexRoute
+  HodIndexRoute: typeof HodIndexRoute
   LecturerIndexRoute: typeof LecturerIndexRoute
+  RegistrarIndexRoute: typeof RegistrarIndexRoute
   StudentIndexRoute: typeof StudentIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
@@ -432,11 +601,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/registrar/': {
+      id: '/registrar/'
+      path: '/registrar'
+      fullPath: '/registrar'
+      preLoaderRoute: typeof RegistrarIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lecturer/': {
       id: '/lecturer/'
       path: '/lecturer'
       fullPath: '/lecturer'
       preLoaderRoute: typeof LecturerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hod/': {
+      id: '/hod/'
+      path: '/hod'
+      fullPath: '/hod'
+      preLoaderRoute: typeof HodIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dean/': {
+      id: '/dean/'
+      path: '/dean'
+      fullPath: '/dean'
+      preLoaderRoute: typeof DeanIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bursar/': {
+      id: '/bursar/'
+      path: '/bursar'
+      fullPath: '/bursar'
+      preLoaderRoute: typeof BursarIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -458,6 +655,20 @@ declare module '@tanstack/react-router' {
       path: '/student/courses'
       fullPath: '/student/courses'
       preLoaderRoute: typeof StudentCoursesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registrar/transcripts': {
+      id: '/registrar/transcripts'
+      path: '/registrar/transcripts'
+      fullPath: '/registrar/transcripts'
+      preLoaderRoute: typeof RegistrarTranscriptsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registrar/students': {
+      id: '/registrar/students'
+      path: '/registrar/students'
+      fullPath: '/registrar/students'
+      preLoaderRoute: typeof RegistrarStudentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lecturer/students': {
@@ -493,6 +704,55 @@ declare module '@tanstack/react-router' {
       path: '/lecturer/attendance'
       fullPath: '/lecturer/attendance'
       preLoaderRoute: typeof LecturerAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hod/staff': {
+      id: '/hod/staff'
+      path: '/hod/staff'
+      fullPath: '/hod/staff'
+      preLoaderRoute: typeof HodStaffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hod/results': {
+      id: '/hod/results'
+      path: '/hod/results'
+      fullPath: '/hod/results'
+      preLoaderRoute: typeof HodResultsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hod/courses': {
+      id: '/hod/courses'
+      path: '/hod/courses'
+      fullPath: '/hod/courses'
+      preLoaderRoute: typeof HodCoursesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dean/results': {
+      id: '/dean/results'
+      path: '/dean/results'
+      fullPath: '/dean/results'
+      preLoaderRoute: typeof DeanResultsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dean/courses': {
+      id: '/dean/courses'
+      path: '/dean/courses'
+      fullPath: '/dean/courses'
+      preLoaderRoute: typeof DeanCoursesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bursar/payments': {
+      id: '/bursar/payments'
+      path: '/bursar/payments'
+      fullPath: '/bursar/payments'
+      preLoaderRoute: typeof BursarPaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bursar/fees': {
+      id: '/bursar/fees'
+      path: '/bursar/fees'
+      fullPath: '/bursar/fees'
+      preLoaderRoute: typeof BursarFeesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -590,15 +850,28 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSessionsRoute: AdminSessionsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
+  BursarFeesRoute: BursarFeesRoute,
+  BursarPaymentsRoute: BursarPaymentsRoute,
+  DeanCoursesRoute: DeanCoursesRoute,
+  DeanResultsRoute: DeanResultsRoute,
+  HodCoursesRoute: HodCoursesRoute,
+  HodResultsRoute: HodResultsRoute,
+  HodStaffRoute: HodStaffRoute,
   LecturerAttendanceRoute: LecturerAttendanceRoute,
   LecturerCoursesRoute: LecturerCoursesRoute,
   LecturerReportsRoute: LecturerReportsRoute,
   LecturerResultsRoute: LecturerResultsRoute,
   LecturerStudentsRoute: LecturerStudentsRoute,
+  RegistrarStudentsRoute: RegistrarStudentsRoute,
+  RegistrarTranscriptsRoute: RegistrarTranscriptsRoute,
   StudentCoursesRoute: StudentCoursesRoute,
   StudentPaymentsRoute: StudentPaymentsRoute,
   AdminIndexRoute: AdminIndexRoute,
+  BursarIndexRoute: BursarIndexRoute,
+  DeanIndexRoute: DeanIndexRoute,
+  HodIndexRoute: HodIndexRoute,
   LecturerIndexRoute: LecturerIndexRoute,
+  RegistrarIndexRoute: RegistrarIndexRoute,
   StudentIndexRoute: StudentIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,

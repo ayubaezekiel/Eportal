@@ -3,13 +3,12 @@ import { getUser } from "@/functions/get-user";
 import { PermissionGuard, usePermission } from "@/components/auth/permission-guard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CoursesTable } from "@/components/tables";
-import { Plus, BookOpen } from "lucide-react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { CourseForm } from "@/components/forms";
+import { BookOpen, Plus, Eye } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/utils/orpc";
 
-export const Route = createFileRoute("/admin/courses")({
-  component: AdminCoursesPage,
+export const Route = createFileRoute("/dean/courses")({
+  component: DeanCourses,
   beforeLoad: async () => {
     const session = await getUser();
     return { session };
@@ -21,8 +20,14 @@ export const Route = createFileRoute("/admin/courses")({
   },
 });
 
-function AdminCoursesPage() {
+function DeanCourses() {
   const canViewCourses = usePermission("view", "courses");
+  const canCreateCourses = usePermission("create", "courses");
+
+  const { data: courses = [] } = useQuery({
+    ...orpc.courses.getAll.queryOptions(),
+    enabled: canViewCourses,
+  });
 
   if (!canViewCourses) {
     return (
@@ -46,32 +51,31 @@ function AdminCoursesPage() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Course Management</h1>
-          <p className="text-muted-foreground">Manage all courses</p>
+          <h1 className="text-3xl font-bold">Faculty Courses</h1>
+          <p className="text-muted-foreground">Manage courses across all departments</p>
         </div>
-        <PermissionGuard action="create" resource="courses">
-          <Dialog>
-            <DialogTrigger>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Course
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <CourseForm mode="create" />
-            </DialogContent>
-          </Dialog>
-        </PermissionGuard>
+        <div className="flex space-x-2">
+          <Button variant="outline">
+            <Eye className="mr-2 h-4 w-4" />
+            View All
+          </Button>
+          <PermissionGuard action="create" resource="courses">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Course
+            </Button>
+          </PermissionGuard>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Courses</CardTitle>
+          <CardTitle>Faculty Courses ({courses.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <PermissionGuard action="view" resource="courses">
-            <CoursesTable />
-          </PermissionGuard>
+          <p className="text-muted-foreground">
+            All courses offered in your faculty will appear here.
+          </p>
         </CardContent>
       </Card>
     </div>

@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { getUser } from "@/functions/get-user";
+import { PermissionGuard } from "@/components/auth/permission-guard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DepartmentsTable } from "@/components/tables";
@@ -8,6 +10,15 @@ import { DepartmentForm } from "@/components/forms";
 
 export const Route = createFileRoute("/admin/departments")({
   component: DepartmentsPage,
+  beforeLoad: async () => {
+    const session = await getUser();
+    return { session };
+  },
+  loader: async ({ context }) => {
+    if (!context.session) {
+      throw redirect({ to: "/login" });
+    }
+  },
 });
 
 function DepartmentsPage() {
@@ -18,17 +29,19 @@ function DepartmentsPage() {
           <h1 className="text-3xl font-bold">Department Management</h1>
           <p className="text-muted-foreground">Manage all departments</p>
         </div>
-        <Dialog>
-          <DialogTrigger>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Department
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DepartmentForm mode="create" />
-          </DialogContent>
-        </Dialog>
+        <PermissionGuard action="create" resource="users">
+          <Dialog>
+            <DialogTrigger>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Department
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DepartmentForm mode="create" />
+            </DialogContent>
+          </Dialog>
+        </PermissionGuard>
       </div>
 
       <Card>
