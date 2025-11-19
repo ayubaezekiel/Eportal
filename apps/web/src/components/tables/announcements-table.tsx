@@ -28,6 +28,7 @@ import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
 import { AnnouncementForm } from "../forms";
 import { toast } from "sonner";
 import type { Announcement } from "@/types/types";
+import { PermissionGuard } from "../auth/permission-guard";
 
 export function AnnouncementsTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -89,44 +90,50 @@ export function AnnouncementsTable() {
       id: "actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button variant="secondary" size="icon-sm">
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="icon-sm">
-                <Edit className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <AnnouncementForm mode="update" announcement={row.original} />
-            </DialogContent>
-          </Dialog>
-          <Button
-            variant="destructive"
-            size="icon-sm"
-            onClick={() => {
-              toast.success(
-                "Are you sure you want to delete this announcement?",
-                {
-                  action: (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() =>
-                        deleteAnnouncement.mutate({ id: row.original.id })
-                      }
-                    >
-                      Delete
-                    </Button>
-                  ),
-                  cancel: "Cancel",
-                }
-              );
-            }}
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
+          <PermissionGuard permission="announcement:read">
+            <Button variant="secondary" size="icon-sm">
+              <Eye className="h-4 w-4" />
+            </Button>
+          </PermissionGuard>
+          <PermissionGuard permission="announcement:update">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="icon-sm">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <AnnouncementForm mode="update" announcement={row.original} />
+              </DialogContent>
+            </Dialog>
+          </PermissionGuard>
+          <PermissionGuard permission="announcement:delete">
+            <Button
+              variant="destructive"
+              size="icon-sm"
+              onClick={() => {
+                toast.success(
+                  "Are you sure you want to delete this announcement?",
+                  {
+                    action: (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() =>
+                          deleteAnnouncement.mutate({ id: row.original.id })
+                        }
+                      >
+                        Delete
+                      </Button>
+                    ),
+                    cancel: "Cancel",
+                  }
+                );
+              }}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </PermissionGuard>
         </div>
       ),
     },

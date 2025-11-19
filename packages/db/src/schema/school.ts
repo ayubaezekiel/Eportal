@@ -20,8 +20,7 @@ export const user = pgTable("user", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: varchar("email", { length: 255 }).notNull().unique(),
 
-  // User Type & Status
-  userType: varchar("user_type", { length: 50 }).notNull(), // 'student', 'lecturer', 'admin', 'hod', 'dean', 'registrar', 'bursar'
+  // User Status
   status: varchar("status", { length: 50 }).notNull().default("active"), // 'active', 'suspended', 'graduated', 'withdrawn', 'deferred'
 
   // Personal Information
@@ -70,7 +69,6 @@ export const user = pgTable("user", {
   employmentDate: text("employment_date"),
   employmentType: varchar("employment_type", { length: 50 }), // 'Full Time', 'Part Time', 'Contract', 'Adjunct'
   officeLocation: varchar("office_location", { length: 200 }),
-  isAdmin: boolean("is_admin").default(false),
 
   // Academic Status
   isOnProbation: boolean("is_on_probation").default(false),

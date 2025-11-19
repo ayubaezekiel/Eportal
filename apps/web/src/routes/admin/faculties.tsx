@@ -37,13 +37,19 @@ function FacultiesPage() {
           </p>
         </div>
         <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogTrigger>
+          <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
               New Faculty
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create New Faculty</DialogTitle>
+              <DialogDescription>
+                Fill out the form below to add a new faculty to the system.
+              </DialogDescription>
+            </DialogHeader>
             <FacultyForm mode="create" />
           </DialogContent>
         </Dialog>

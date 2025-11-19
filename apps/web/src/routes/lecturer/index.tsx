@@ -49,7 +49,7 @@ function LecturerDashboard() {
 
   const totalStudents =
     courseRegistrations?.filter((cr) =>
-      assignedCourseIds.includes(cr.results.courseId)
+      assignedCourseIds.includes(cr.courses.id)
     ).length || 0;
 
   const pendingResults =

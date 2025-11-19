@@ -2,14 +2,14 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { getUser } from "@/functions/get-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CoursesTable } from "@/components/tables";
+import { AnnouncementsTable } from "@/components/tables";
 import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { CourseForm } from "@/components/forms";
+import { AnnouncementForm } from "@/components/forms";
 import { PermissionGuard } from "@/components/auth/permission-guard";
 
-export const Route = createFileRoute("/admin/courses")({
-  component: AdminCoursesPage,
+export const Route = createFileRoute("/admin/announcements")({
+  component: AdminAnnouncementsPage,
   beforeLoad: async () => {
     const session = await getUser();
     return { session };
@@ -21,30 +21,26 @@ export const Route = createFileRoute("/admin/courses")({
   },
 });
 
-function AdminCoursesPage() {
+function AdminAnnouncementsPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Course Management</h1>
-          <p className="text-muted-foreground">Manage all courses</p>
+          <h1 className="text-3xl font-bold">Announcement Management</h1>
+          <p className="text-muted-foreground">
+            Create and manage system-wide announcements
+          </p>
         </div>
-        <PermissionGuard permission="course:create">
+        <PermissionGuard permission="announcement:create">
           <Dialog>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Course
+                New Announcement
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create a New Course</DialogTitle>
-                <DialogDescription>
-                  Fill out the form below to add a new course to the system.
-                </DialogDescription>
-              </DialogHeader>
-              <CourseForm mode="create" />
+            <DialogContent className="max-w-3xl">
+              <AnnouncementForm mode="create" />
             </DialogContent>
           </Dialog>
         </PermissionGuard>
@@ -52,10 +48,10 @@ function AdminCoursesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Courses</CardTitle>
+          <CardTitle>All Announcements</CardTitle>
         </CardHeader>
         <CardContent>
-          <CoursesTable />
+          <AnnouncementsTable />
         </CardContent>
       </Card>
     </div>

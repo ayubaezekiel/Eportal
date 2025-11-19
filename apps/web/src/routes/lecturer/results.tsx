@@ -30,17 +30,25 @@ function LecturerResultsPage() {
             Enter and manage student results
           </p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Result
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <ResultForm mode="create" />
-          </DialogContent>
-        </Dialog>
+        <PermissionGuard permission="result:create">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Result
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Enter New Student Result</DialogTitle>
+                <DialogDescription>
+                  Fill out the form below to record a new result for a student.
+                </DialogDescription>
+              </DialogHeader>
+              <ResultForm mode="create" />
+            </DialogContent>
+          </Dialog>
+        </PermissionGuard>
       </div>
 
       <Card>

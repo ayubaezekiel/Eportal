@@ -56,6 +56,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { View } from "../view";
 import { toast } from "sonner";
+import { PermissionGuard } from "../auth/permission-guard";
 
 function UserDetailsDialog({
   user,
@@ -690,40 +691,45 @@ export function UsersTable({ userType }: { userType: "all" | "student" }) {
       id: "actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button
-            variant={"secondary"}
-            size="icon-sm"
-            onClick={() => {
-              setSelectedUser(row.original);
-              setDialogOpen(true);
-            }}
-          >
-            <Eye />
-          </Button>
-          <UpdateUserForm user={row.original} />
-
-          <Button
-            variant={"destructive"}
-            size="icon-sm"
-            onClick={async () => {
-              toast.success("Are you sure you want to delete this user?", {
-                action: (
-                  <Button
-                    size={"sm"}
-                    variant={"destructive"}
-                    onClick={async () => {
-                      await deleteUser.mutateAsync({ id: row.original.id });
-                    }}
-                  >
-                    Delete
-                  </Button>
-                ),
-                cancel: "Cancelled!!!",
-              });
-            }}
-          >
-            <Trash />
-          </Button>
+          <PermissionGuard permission="user:read">
+            <Button
+              variant={"secondary"}
+              size="icon-sm"
+              onClick={() => {
+                setSelectedUser(row.original);
+                setDialogOpen(true);
+              }}
+            >
+              <Eye />
+            </Button>
+          </PermissionGuard>
+          <PermissionGuard permission="user:update">
+            <UpdateUserForm user={row.original} />
+          </PermissionGuard>
+          <PermissionGuard permission="user:delete">
+            <Button
+              variant={"destructive"}
+              size="icon-sm"
+              onClick={async () => {
+                toast.success("Are you sure you want to delete this user?", {
+                  action: (
+                    <Button
+                      size={"sm"}
+                      variant={"destructive"}
+                      onClick={async () => {
+                        await deleteUser.mutateAsync({ id: row.original.id });
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  ),
+                  cancel: "Cancelled!!!",
+                });
+              }}
+            >
+              <Trash />
+            </Button>
+          </PermissionGuard>
         </div>
       ),
     },

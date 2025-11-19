@@ -29,7 +29,6 @@ export const Route = createFileRoute("/dean/")({
 function DeanDashboard() {
   const { session } = Route.useRouteContext();
 
-  const { data: faculties } = useQuery(orpc.faculties.getAll.queryOptions());
   const { data: departments } = useQuery(
     orpc.departments.getAll.queryOptions()
   );

@@ -8,6 +8,7 @@ import { orpc } from "@/utils/orpc";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
+import { PermissionGuard } from "@/components/auth/permission-guard";
 
 export const Route = createFileRoute("/admin/sessions")({
   component: SessionsPage,
@@ -36,17 +37,25 @@ function SessionsPage() {
             Manage academic sessions and calendars
           </p>
         </div>
-        <Dialog>
-          <DialogTrigger>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Session
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <AcademicSessionForm mode="create" />
-          </DialogContent>
-        </Dialog>
+        <PermissionGuard permission="settings:update">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Session
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Academic Session</DialogTitle>
+                <DialogDescription>
+                  Define a new academic session and its important dates.
+                </DialogDescription>
+              </DialogHeader>
+              <AcademicSessionForm mode="create" />
+            </DialogContent>
+          </Dialog>
+        </PermissionGuard>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

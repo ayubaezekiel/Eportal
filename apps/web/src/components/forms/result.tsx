@@ -2,13 +2,12 @@
 
 import { useUser } from "@/hooks/auth";
 import { orpc, queryClient } from "@/utils/orpc";
-import { useMutation } from "@tanstack/react-query";
-import { useEffect, useRef, useMemo, useCallback } from "react"; // Added useCallback and useMemo
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import z from "zod";
-import { useAppForm } from "../form";
+import { useForm } from "@tanstack/react-form";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Checkbox } from "../ui/checkbox";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -19,67 +18,60 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-// Removed useStore from @tanstack/react-form
 
 const resultSchema = z.object({
   id: z.string().uuid().optional(),
-  studentId: z.string().uuid(),
-  courseId: z.string().uuid(),
-  sessionId: z.string().uuid(),
-  semester: z.string(),
+  studentId: z.string().uuid("Please select a student"),
+  courseId: z.string().uuid("Please select a course"),
+  sessionId: z.string().uuid("Please select an academic session"),
+  semester: z.string().min(1, "Semester is required"),
   // CA Components
   attendance: z.string().optional(),
   assignment: z.string().optional(),
   test1: z.string().optional(),
   test2: z.string().optional(),
   practical: z.string().optional(),
-  caTotal: z.string().optional(),
+  caTotal: z.string().optional(), // Auto-calculated
   // Exam
-  examScore: z.string(),
-  totalScore: z.string(),
-  grade: z.string(),
-  gradePoint: z.string(),
-  remark: z.string().optional(),
+  examScore: z.string().optional(),
+  totalScore: z.string().optional(), // Auto-calculated
+  grade: z.string().optional(), // Auto-calculated
+  gradePoint: z.string().optional(), // Auto-calculated
+  remark: z.string().optional(), // Auto-calculated
   // Processing
   uploadedBy: z.string().uuid().optional(),
-  uploadedAt: z.date().optional(),
-  verifiedBy: z.string().uuid().optional(),
-  verifiedAt: z.date().optional(),
-  approvedBy: z.string().uuid().optional(),
-  approvedAt: z.date().optional(),
   status: z.string().default("Draft"),
   // Academic Integrity
   isCarryOver: z.boolean().default(false),
-  attemptNumber: z.number().default(1),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
+  attemptNumber: z.number().min(1).default(1),
 });
+
+type ResultFormValues = z.infer<typeof resultSchema>;
 
 interface ResultFormProps {
   mode: "create" | "update";
-  result?: z.infer<typeof resultSchema>;
-  onSubmit?: (data: z.infer<typeof resultSchema>) => Promise<void>;
-  onClose?: () => void; // Added for dialog close
+  result?: ResultFormValues;
 }
 
-export const ResultForm = ({
-  mode,
-  result,
-  onSubmit,
-  onClose,
-}: ResultFormProps) => {
-  const { data: user } = useUser();
-  const userId = user?.data?.user.id;
+export const ResultForm = ({ mode, result }: ResultFormProps) => {
+  const { user } = useUser();
+  const currentUserId = user?.data?.user.id;
+
+  // Fetching data for select inputs
+  const { data: students } = useQuery(orpc.users.getByUserType.queryOptions({ input: { userType: "student" } }));
+  const { data: courses } = useQuery(orpc.courses.getAll.queryOptions());
+  const { data: academicSessions } = useQuery(orpc.academicSessions.getAll.queryOptions());
 
   const createMutation = useMutation(
     orpc.results.create.mutationOptions({
       onSuccess: () => {
         toast.success("Result created successfully");
+        queryClient.invalidateQueries({
+          queryKey: orpc.results.getAll.queryKey(),
+        });
         form.reset();
-        queryClient.invalidateQueries({ queryKey: ["results"] });
-        onClose?.(); // Close dialog on success
       },
-      onError: (err) => toast.error(err.message),
+      onError: (err) => toast.error(err.message || "Failed to create result"),
     })
   );
 
@@ -87,128 +79,106 @@ export const ResultForm = ({
     orpc.results.update.mutationOptions({
       onSuccess: () => {
         toast.success("Result updated successfully");
-        queryClient.invalidateQueries({ queryKey: orpc.results.update.key() });
-        onClose?.(); // Close dialog on success
+        queryClient.invalidateQueries({
+          queryKey: orpc.results.getAll.queryKey(),
+        });
       },
-      onError: (err) => toast.error(err.message),
+      onError: (err) => toast.error(err.message || "Failed to update result"),
     })
   );
 
-  const getDefaultValues = useCallback(() => {
-    return {
-      ...(result ?? {}),
-      studentId: result?.studentId ?? "",
-      courseId: result?.courseId ?? "",
-      sessionId: result?.sessionId ?? "",
-      semester: result?.semester ?? "First",
-      attendance: result?.attendance ?? "0",
-      assignment: result?.assignment ?? "0",
-      test1: result?.test1 ?? "0",
-      test2: result?.test2 ?? "0",
-      practical: result?.practical ?? "0",
-      caTotal: result?.caTotal ?? "0", // Will be overwritten by calculation
-      examScore: result?.examScore ?? "0",
-      totalScore: result?.totalScore ?? "0", // Will be overwritten by calculation
-      grade: result?.grade ?? "", // Will be overwritten by calculation
-      gradePoint: result?.gradePoint ?? "0", // Will be overwritten by calculation
-      remark: result?.remark ?? "", // Will be overwritten by calculation
-      uploadedBy: result?.uploadedBy ?? userId ?? "",
-      status: result?.status ?? "Draft",
-      isCarryOver: result?.isCarryOver ?? false,
-      attemptNumber: result?.attemptNumber ?? 1,
-    };
-  }, [result, userId]);
-
-  const form = useAppForm({
-    defaultValues: getDefaultValues(), // Initialize with default values
+  const form = useForm({
+    defaultValues: result || {
+      studentId: "",
+      courseId: "",
+      sessionId: "",
+      semester: "First",
+      attendance: "0",
+      assignment: "0",
+      test1: "0",
+      test2: "0",
+      practical: "0",
+      caTotal: "0",
+      examScore: "0",
+      totalScore: "0",
+      grade: "",
+      gradePoint: "0",
+      remark: "",
+      status: "Draft",
+      isCarryOver: false,
+      attemptNumber: 1,
+    },
     onSubmit: async ({ value }) => {
-      if (onSubmit) {
-        await onSubmit(value);
-        return;
-      }
+      const dataToSubmit = {
+        ...value,
+        uploadedBy: currentUserId, // Ensure uploadedBy is set
+        attendance: value.attendance || "0",
+        assignment: value.assignment || "0",
+        test1: value.test1 || "0",
+        test2: value.test2 || "0",
+        practical: value.practical || "0",
+        examScore: value.examScore || "0",
+      };
 
       if (mode === "create") {
-        await createMutation.mutateAsync(value);
+        await createMutation.mutateAsync(dataToSubmit);
       } else {
-        await updateMutation.mutateAsync({ ...value, id: result?.id ?? "" });
+        if (!result?.id) throw new Error("Result ID is missing for update");
+        await updateMutation.mutateAsync({ ...dataToSubmit, id: result.id });
       }
     },
   });
 
-  // Effect for setting uploadedBy on create
-  useEffect(() => {
-    if (mode === "create" && userId && !form.getFieldValue("uploadedBy")) {
-      form.setFieldValue("uploadedBy", userId); // Added dontUpdateIfSame
-    }
-  }, [mode, userId, form]);
+  const {
+    attendance,
+    assignment,
+    test1,
+    test2,
+    practical,
+    examScore,
+  } = form.state.values;
 
-  // Use a debounced effect for calculations to reduce re-renders
-  const currentFormValues = {
-    attendance: form.state.values.attendance,
-    assignment: form.state.values.assignment,
-    test1: form.state.values.test1,
-    test2: form.state.values.test2,
-    practical: form.state.values.practical,
-    examScore: form.state.values.examScore,
-  };
-
-  // Memoize the calculation function
-  const calculateGradeInfo = useCallback((score: number) => {
-    if (score >= 70)
+  // Memoize the grade calculation function
+  const calculateGradeInfo = useMemo(() => (totalScore: number) => {
+    if (totalScore >= 70)
       return { grade: "A", gradePoint: "5.00", remark: "Excellent" };
-    if (score >= 60)
+    if (totalScore >= 60)
       return { grade: "B", gradePoint: "4.00", remark: "Very Good" };
-    if (score >= 50) return { grade: "C", gradePoint: "3.00", remark: "Good" };
-    if (score >= 45) return { grade: "D", gradePoint: "2.00", remark: "Fair" };
-    if (score >= 40) return { grade: "E", gradePoint: "1.00", remark: "Pass" };
+    if (totalScore >= 50)
+      return { grade: "C", gradePoint: "3.00", remark: "Good" };
+    if (totalScore >= 45)
+      return { grade: "D", gradePoint: "2.00", remark: "Fair" };
+    if (totalScore >= 40)
+      return { grade: "E", gradePoint: "1.00", remark: "Pass" };
     return { grade: "F", gradePoint: "0.00", remark: "Fail" };
   }, []);
 
-  // Use a single useEffect with debounce for all calculated fields
   useEffect(() => {
-    const handler = setTimeout(() => {
-      const ca =
-        Number(currentFormValues.attendance ?? 0) +
-        Number(currentFormValues.assignment ?? 0) +
-        Number(currentFormValues.test1 ?? 0) +
-        Number(currentFormValues.test2 ?? 0) +
-        Number(currentFormValues.practical ?? 0);
+    const ca =
+      Number(attendance) +
+      Number(assignment) +
+      Number(test1) +
+      Number(test2) +
+      Number(practical);
+    const total = ca + Number(examScore);
 
-      const exam = Number(currentFormValues.examScore ?? 0);
-      const total = ca + exam;
-      const { grade, gradePoint, remark } = calculateGradeInfo(total);
+    const { grade, gradePoint, remark } = calculateGradeInfo(total);
 
-      // Batch updates where possible, and use dontUpdateIfSame to prevent unnecessary re-renders
-      form.setFieldValue("caTotal", ca.toFixed(2));
-      form.setFieldValue("totalScore", total.toFixed(2));
-      form.setFieldValue("grade", grade);
-      form.setFieldValue("gradePoint", gradePoint);
-      form.setFieldValue("remark", remark);
-    }, 300); // Debounce by 300ms
-
-    return () => {
-      clearTimeout(handler);
-    };
+    form.setFieldValue("caTotal", ca.toFixed(2), { dontUpdateIfSame: true });
+    form.setFieldValue("totalScore", total.toFixed(2), { dontUpdateIfSame: true });
+    form.setFieldValue("grade", grade, { dontUpdateIfSame: true });
+    form.setFieldValue("gradePoint", gradePoint, { dontUpdateIfSame: true });
+    form.setFieldValue("remark", remark, { dontUpdateIfSame: true });
   }, [
-    currentFormValues.attendance,
-    currentFormValues.assignment,
-    currentFormValues.test1,
-    currentFormValues.test2,
-    currentFormValues.practical,
-    currentFormValues.examScore,
+    attendance,
+    assignment,
+    test1,
+    test2,
+    practical,
+    examScore,
     calculateGradeInfo,
     form,
   ]);
-
-  const prevResultRef = useRef(result);
-  useEffect(() => {
-    if (mode === "update" && result && prevResultRef.current !== result) {
-      if (!form.state.isDirty) {
-        form.reset(getDefaultValues()); // Reset with the new default values
-      }
-      prevResultRef.current = result;
-    }
-  }, [mode, result, form, getDefaultValues]); // Added form and getDefaultValues to deps
 
   const statusOptions = useMemo(
     () => ["Draft", "Submitted", "Verified", "Approved", "Published"],
@@ -216,252 +186,333 @@ export const ResultForm = ({
   );
 
   return (
-    <Card className="mx-auto mt-10">
-      <CardHeader>
-        <CardTitle>
-          {mode === "create" ? "Enter Result" : "Update Result"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-          className="space-y-6"
-        >
-          {/* ---------- Student & Course ---------- */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Student Information</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <form.AppField
-                name="studentId"
-                validators={{ onChange: resultSchema.shape.studentId }}
-              >
-                {(field) => <field.StudentField />}
-              </form.AppField>
-
-              <form.AppField
-                name="courseId"
-                validators={{ onChange: resultSchema.shape.courseId }}
-              >
-                {(field) => <field.CourseField />}
-              </form.AppField>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <form.AppField
-                name="sessionId"
-                validators={{ onChange: resultSchema.shape.sessionId }}
-              >
-                {(field) => <field.AcademicSessionField />}
-              </form.AppField>
-
-              <form.AppField name="semester">
-                {(field) => <field.SemesterField />}
-              </form.AppField>
-
-              <form.AppField
-                name="attemptNumber"
-                validators={{ onChange: z.number().min(1) }}
-              >
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label>Attempt Number</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={field.state.value}
-                      onChange={(e) =>
-                        field.handleChange(Number(e.target.value))
-                      }
-                      onBlur={field.handleBlur} // Add onBlur
-                    />
-                  </div>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+      className="space-y-6 py-4"
+    >
+      {/* ---------- Student & Course ---------- */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Student & Course Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form.Field
+            name="studentId"
+            validators={{ onChange: resultSchema.shape.studentId }}
+            children={(field) => (
+              <div className="space-y-1">
+                <Label>Student *</Label>
+                <Select
+                  value={field.state.value}
+                  onValueChange={field.handleChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a student" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {students?.map((student) => (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.firstName} {student.lastName} (
+                        {student.matricNumber || student.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {field.state.meta.errors && (
+                  <p className="text-sm text-red-500">
+                    {field.state.meta.errors.join(", ")}
+                  </p>
                 )}
-              </form.AppField>
-            </div>
+              </div>
+            )}
+          />
 
-            <form.Field name="isCarryOver">
-              {(field) => (
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="isCarryOver"
-                    checked={field.state.value}
-                    onCheckedChange={(c) => field.handleChange(!!c)}
-                    onBlur={field.handleBlur} // Add onBlur
-                  />
-                  <Label htmlFor="isCarryOver" className="cursor-pointer">
-                    Carry Over Course
+          <form.Field
+            name="courseId"
+            validators={{ onChange: resultSchema.shape.courseId }}
+            children={(field) => (
+              <div className="space-y-1">
+                <Label>Course *</Label>
+                <Select
+                  value={field.state.value}
+                  onValueChange={field.handleChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a course" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses?.map((course) => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.courseCode} - {course.courseTitle}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {field.state.meta.errors && (
+                  <p className="text-sm text-red-500">
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <form.Field
+            name="sessionId"
+            validators={{ onChange: resultSchema.shape.sessionId }}
+            children={(field) => (
+              <div className="space-y-1">
+                <Label>Academic Session *</Label>
+                <Select
+                  value={field.state.value}
+                  onValueChange={field.handleChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select session" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {academicSessions?.map((session) => (
+                      <SelectItem key={session.id} value={session.id}>
+                        {session.sessionName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {field.state.meta.errors && (
+                  <p className="text-sm text-red-500">
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+
+          <form.Field
+            name="semester"
+            validators={{ onChange: resultSchema.shape.semester }}
+            children={(field) => (
+              <div className="space-y-1">
+                <Label>Semester *</Label>
+                <Select
+                  value={field.state.value}
+                  onValueChange={field.handleChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="First">First</SelectItem>
+                    <SelectItem value="Second">Second</SelectItem>
+                  </SelectContent>
+                </Select>
+                {field.state.meta.errors && (
+                  <p className="text-sm text-red-500">
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+
+          <form.Field
+            name="attemptNumber"
+            validators={{ onChange: resultSchema.shape.attemptNumber }}
+            children={(field) => (
+              <div className="space-y-1">
+                <Label>Attempt Number *</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(Number(e.target.value))}
+                />
+                {field.state.meta.errors && (
+                  <p className="text-sm text-red-500">
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+        </div>
+
+        <form.Field
+          name="isCarryOver"
+          children={(field) => (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isCarryOver"
+                checked={field.state.value}
+                onCheckedChange={(checked) => field.handleChange(Boolean(checked))}
+              />
+              <Label htmlFor="isCarryOver">Carry Over Course</Label>
+            </div>
+          )}
+        />
+      </div>
+
+      {/* ---------- Continuous Assessment ---------- */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Continuous Assessment (CA)</h3>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {[
+            "attendance",
+            "assignment",
+            "test1",
+            "test2",
+            "practical",
+          ].map((name) => (
+            <form.Field
+              key={name}
+              name={name as keyof ResultFormValues}
+              children={(field) => (
+                <div className="space-y-1">
+                  <Label>
+                    {name.charAt(0).toUpperCase() +
+                      name.slice(1).replace(/([A-Z])/g, " $1")}{" "}
+                    (10%)
                   </Label>
-                </div>
-              )}
-            </form.Field>
-          </div>
-
-          {/* ---------- Continuous Assessment ---------- */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">
-              Continuous Assessment (CA)
-            </h3>
-            <div className="grid grid-cols-5 gap-4">
-              {["attendance", "assignment", "test1", "test2", "practical"].map(
-                (name) => (
-                  <form.Field key={name} name={name as any}>
-                    {(field) => (
-                      <div className="space-y-2">
-                        <Label>
-                          {name.charAt(0).toUpperCase() +
-                            name.slice(1).replace(/([A-Z])/g, " $1")}{" "}
-                          (10%)
-                        </Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="10"
-                          step="0.01"
-                          value={field.state.value}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          onBlur={field.handleBlur} // Add onBlur
-                        />
-                      </div>
-                    )}
-                  </form.Field>
-                )
-              )}
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <form.Field name="caTotal">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label>CA Total (Auto-calculated)</Label>
-                    <Input
-                      type="number"
-                      value={field.state.value}
-                      readOnly
-                      className="bg-muted"
-                    />
-                  </div>
-                )}
-              </form.Field>
-            </div>
-          </div>
-
-          {/* ---------- Exam & Final Results ---------- */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">
-              Examination & Final Results
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <form.Field name="examScore">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label>Exam Score (max 70)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="70"
-                      step="0.01"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur} // Add onBlur
-                    />
-                  </div>
-                )}
-              </form.Field>
-
-              <form.Field name="totalScore">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label>Total Score (Auto-calculated)</Label>
-                    <Input
-                      type="number"
-                      value={field.state.value}
-                      readOnly
-                      className="bg-muted"
-                    />
-                  </div>
-                )}
-              </form.Field>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              {["grade", "gradePoint", "remark"].map((name) => (
-                <form.Field key={name} name={name as any}>
-                  {(field) => (
-                    <div className="space-y-2">
-                      <Label>
-                        {name.charAt(0).toUpperCase() +
-                          name.slice(1).replace(/([A-Z])/g, " $1")}{" "}
-                        (Auto-calculated)
-                      </Label>
-                      <Input
-                        value={field.state.value}
-                        readOnly
-                        className="bg-muted"
-                      />
-                    </div>
-                  )}
-                </form.Field>
-              ))}
-            </div>
-          </div>
-
-          {/* ---------- Processing Status ---------- */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Processing Status</h3>
-            <form.Field name="status">
-              {(field) => (
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select
+                  <Input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.01"
                     value={field.state.value}
-                    onValueChange={field.handleChange}
-                    onOpenChange={(open) => {
-                      if (!open) field.handleBlur(); // Trigger blur when select closes
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
                 </div>
               )}
-            </form.Field>
-          </div>
+            />
+          ))}
+        </div>
 
-          {/* ---------- Actions ---------- */}
-          <div className="flex gap-4 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                form.reset();
-              }}
-            >
-              {mode === "create" ? "Clear Form" : "Cancel"}
-            </Button>
-            <Button
-              type="submit"
-              disabled={createMutation.isPending || updateMutation.isPending}
-            >
-              {createMutation.isPending || updateMutation.isPending
-                ? "Saving..."
-                : mode === "create"
-                ? "Enter Result"
-                : "Update Result"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form.Field
+            name="caTotal"
+            children={(field) => (
+              <div className="space-y-1">
+                <Label>CA Total (Auto-calculated)</Label>
+                <Input type="number" value={field.state.value} readOnly className="bg-muted" />
+              </div>
+            )}
+          />
+          <form.Field
+            name="examScore"
+            children={(field) => (
+              <div className="space-y-1">
+                <Label>Exam Score (max 70)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="70"
+                  step="0.01"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+              </div>
+            )}
+          />
+        </div>
+      </div>
+
+      {/* ---------- Exam & Final Results ---------- */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Examination & Final Results</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <form.Field
+            name="totalScore"
+            children={(field) => (
+              <div className="space-y-1">
+                <Label>Total Score (Auto-calculated)</Label>
+                <Input type="number" value={field.state.value} readOnly className="bg-muted" />
+              </div>
+            )}
+          />
+          <form.Field
+            name="grade"
+            children={(field) => (
+              <div className="space-y-1">
+                <Label>Grade (Auto-calculated)</Label>
+                <Input value={field.state.value} readOnly className="bg-muted" />
+              </div>
+            )}
+          />
+          <form.Field
+            name="gradePoint"
+            children={(field) => (
+              <div className="space-y-1">
+                <Label>Grade Point (Auto-calculated)</Label>
+                <Input type="number" value={field.state.value} readOnly className="bg-muted" />
+              </div>
+            )}
+          />
+          <form.Field
+            name="remark"
+            children={(field) => (
+              <div className="space-y-1 col-span-full">
+                <Label>Remark (Auto-calculated)</Label>
+                <Input value={field.state.value} readOnly className="bg-muted" />
+              </div>
+            )}
+          />
+        </div>
+      </div>
+
+      {/* ---------- Processing Status ---------- */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Processing Status</h3>
+        <form.Field
+          name="status"
+          children={(field) => (
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
+      </div>
+
+      {/* ---------- Actions ---------- */}
+      <div className="flex justify-end gap-4 pt-4 border-t">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            form.reset();
+          }}
+          disabled={createMutation.isPending || updateMutation.isPending}
+        >
+          Reset
+        </Button>
+        <Button
+          type="submit"
+          disabled={createMutation.isPending || updateMutation.isPending}
+        >
+          {createMutation.isPending || updateMutation.isPending
+            ? "Saving..."
+            : mode === "create"
+            ? "Enter Result"
+            : "Update Result"}
+        </Button>
+      </div>
+    </form>
   );
 };

@@ -29,13 +29,19 @@ function DepartmentsPage() {
           <p className="text-muted-foreground">Manage all departments</p>
         </div>
         <Dialog>
-          <DialogTrigger>
+          <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
               Add Department
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create New Department</DialogTitle>
+              <DialogDescription>
+                Fill out the form below to add a new department to a faculty.
+              </DialogDescription>
+            </DialogHeader>
             <DepartmentForm mode="create" />
           </DialogContent>
         </Dialog>

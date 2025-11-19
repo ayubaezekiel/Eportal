@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { View } from "../view";
+import { PermissionGuard } from "../auth/permission-guard";
 
 export function CoursesTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -88,43 +89,49 @@ export function CoursesTable() {
       id: "actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="icon-sm">
-                <Edit className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <CourseForm
-                mode="update"
-                course={{
-                  ...row.original,
-                  isActive: Boolean(row.original.isActive),
-                  description: row.original.description as string,
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-          <Button
-            variant="destructive"
-            size="icon-sm"
-            onClick={() => {
-              toast.success("Are you sure you want to delete this course?", {
-                action: (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => deleteCourse.mutate({ id: row.original.id })}
-                  >
-                    Delete
-                  </Button>
-                ),
-                cancel: "Cancel",
-              });
-            }}
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
+          <PermissionGuard permission="course:update">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="icon-sm">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <CourseForm
+                  mode="update"
+                  course={{
+                    ...row.original,
+                    isActive: Boolean(row.original.isActive),
+                    description: row.original.description as string,
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          </PermissionGuard>
+          <PermissionGuard permission="course:delete">
+            <Button
+              variant="destructive"
+              size="icon-sm"
+              onClick={() => {
+                toast.success("Are you sure you want to delete this course?", {
+                  action: (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() =>
+                        deleteCourse.mutate({ id: row.original.id })
+                      }
+                    >
+                      Delete
+                    </Button>
+                  ),
+                  cancel: "Cancel",
+                });
+              }}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </PermissionGuard>
         </div>
       ),
     },

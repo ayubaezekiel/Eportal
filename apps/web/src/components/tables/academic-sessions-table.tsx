@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { PermissionGuard } from "../auth/permission-guard";
 
 export function AcademicSessionsTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -90,41 +91,47 @@ export function AcademicSessionsTable() {
       id: "actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button variant="secondary" size="icon-sm">
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="icon-sm">
-                <Edit className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <AcademicSessionForm mode="update" session={row.original} />
-            </DialogContent>
-          </Dialog>
-          <Button
-            variant="destructive"
-            size="icon-sm"
-            onClick={() => {
-              toast.success("Are you sure you want to delete this session?", {
-                action: (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() =>
-                      deleteSession.mutate({ id: row.original.id })
-                    }
-                  >
-                    Delete
-                  </Button>
-                ),
-                cancel: "Cancel",
-              });
-            }}
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
+          <PermissionGuard permission="settings:update">
+            <Button variant="secondary" size="icon-sm">
+              <Eye className="h-4 w-4" />
+            </Button>
+          </PermissionGuard>
+          <PermissionGuard permission="settings:update">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="icon-sm">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <AcademicSessionForm mode="update" session={row.original} />
+              </DialogContent>
+            </Dialog>
+          </PermissionGuard>
+          <PermissionGuard permission="settings:update">
+            <Button
+              variant="destructive"
+              size="icon-sm"
+              onClick={() => {
+                toast.success("Are you sure you want to delete this session?", {
+                  action: (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() =>
+                        deleteSession.mutate({ id: row.original.id })
+                      }
+                    >
+                      Delete
+                    </Button>
+                  ),
+                  cancel: "Cancel",
+                });
+              }}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </PermissionGuard>
         </div>
       ),
     },

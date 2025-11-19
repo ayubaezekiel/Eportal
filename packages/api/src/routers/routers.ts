@@ -1,8 +1,10 @@
+import { auth } from "@Eportal/auth";
 import { db } from "@Eportal/db";
 import * as schema from "@Eportal/db/schema/school";
 import { and, desc, eq } from "drizzle-orm";
 import z from "zod";
 import { protectedProcedure } from "../index";
+import { ORPCError } from "@orpc/server";
 
 // Users Router
 export const usersRouter = {
@@ -24,6 +26,7 @@ export const usersRouter = {
     .input(
       z.object({
         email: z.string().email(),
+        password: z.string(),
         name: z.string(),
         userType: z.enum([
           "student",
@@ -43,25 +46,16 @@ export const usersRouter = {
         lgaOfOrigin: z.string(),
         permanentAddress: z.string(),
         contactAddress: z.string(),
-        roleIds: z.array(z.string().uuid()).optional(),
       })
     )
     .handler(async ({ input }) => {
-      const { roleIds, ...userData } = input;
-      const [newUser] = await db
-        .insert(schema.user)
-        .values(userData)
-        .returning();
+      // Use the auth module to handle user creation and password hashing
+      const { user } = await auth.api.signUpEmail({ body: input });
 
-      if (roleIds?.length) {
-        await db
-          .insert(schema.userRoles)
-          .values(
-            roleIds.map((roleId) => ({ userId: `${newUser?.id}`, roleId }))
-          );
+      if (!user.id) {
+        throw new ORPCError("Failed to create user.");
       }
-
-      return newUser;
+      return user;
     }),
 
   update: protectedProcedure

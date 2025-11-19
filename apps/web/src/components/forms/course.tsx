@@ -1,10 +1,9 @@
 import { orpc, queryClient } from "@/utils/orpc";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import z from "zod";
-import { FieldError, useAppForm } from "../form";
+import { useForm } from "@tanstack/react-form";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Checkbox } from "../ui/checkbox";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -19,52 +18,59 @@ import { Textarea } from "../ui/textarea";
 
 const courseSchema = z.object({
   id: z.string().uuid().optional(),
-  courseCode: z.string().min(6),
-  courseTitle: z.string().min(5),
-  creditUnits: z.number().min(1).max(6),
+  courseCode: z.string().min(3, "Course code is required"),
+  courseTitle: z.string().min(3, "Course title is required"),
+  creditUnits: z.number().min(0).max(12),
   courseType: z.string(),
   level: z.number().min(100).max(900),
   semester: z.string(),
-  departmentId: z.string().uuid(),
+  departmentId: z.string().uuid("Please select a department"),
   description: z.string().optional(),
   isActive: z.boolean(),
 });
 
+type CourseFormValues = z.infer<typeof courseSchema>;
+
 interface CourseFormProps {
   mode: "create" | "update";
-  course?: z.infer<typeof courseSchema>;
-  onSubmit?: (data: z.infer<typeof courseSchema>) => Promise<void>;
+  course?: CourseFormValues;
 }
 
-export const CourseForm = ({ mode, course, onSubmit }: CourseFormProps) => {
+export const CourseForm = ({ mode, course }: CourseFormProps) => {
+  const { data: departments } = useQuery(
+    orpc.departments.getAll.queryOptions()
+  );
+
   const createMutation = useMutation(
     orpc.courses.create.mutationOptions({
       onSuccess: () => {
         toast.success("Course created successfully");
         queryClient.invalidateQueries({
-          queryKey: orpc.courses.create.key(),
+          queryKey: orpc.courses.getAll.queryKey(),
         });
+        form.reset();
       },
       onError: (err) => {
-        toast.error(err.message || "An error occurred");
+        toast.error(err.message || "Failed to create course");
       },
     })
   );
+
   const updateMutation = useMutation(
     orpc.courses.update.mutationOptions({
       onSuccess: () => {
         toast.success("Course updated successfully");
         queryClient.invalidateQueries({
-          queryKey: orpc.courses.update.key(),
+          queryKey: orpc.courses.getAll.queryKey(),
         });
       },
       onError: (err) => {
-        toast.error(err.message || "An error occurred");
+        toast.error(err.message || "Failed to update course");
       },
     })
   );
 
-  const form = useAppForm({
+  const form = useForm({
     defaultValues: course || {
       courseCode: "",
       courseTitle: "",
@@ -76,169 +82,209 @@ export const CourseForm = ({ mode, course, onSubmit }: CourseFormProps) => {
       description: "",
       isActive: true,
     },
-    validators: {
-      onChange: courseSchema,
-    },
     onSubmit: async ({ value }) => {
-      if (onSubmit) {
-        await onSubmit(value);
+      if (mode === "create") {
+        await createMutation.mutateAsync(value);
       } else {
-        if (mode === "create") {
-          await createMutation.mutateAsync(value);
-        } else {
-          await updateMutation.mutateAsync({ id: `${course?.id}`, ...value });
-        }
+        if (!course?.id) throw new Error("Course ID is missing for update");
+        await updateMutation.mutateAsync({ ...value, id: course.id });
       }
     },
   });
 
   return (
-    <Card className="mt-10">
-      <CardHeader>
-        <CardTitle>{mode === "create" ? "Create" : "Update"} Course</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-          className="space-y-4"
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+      className="space-y-6 py-4"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form.Field
+          name="courseCode"
+          validators={{ onChange: courseSchema.shape.courseCode }}
+          children={(field) => (
+            <div className="space-y-1">
+              <Label>Course Code *</Label>
+              <Input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+              />
+              {field.state.meta.errors && (
+                <p className="text-sm text-red-500">
+                  {field.state.meta.errors.join(", ")}
+                </p>
+              )}
+            </div>
+          )}
+        />
+        <form.Field
+          name="creditUnits"
+          validators={{ onChange: courseSchema.shape.creditUnits }}
+          children={(field) => (
+            <div className="space-y-1">
+              <Label>Credit Units *</Label>
+              <Input
+                type="number"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(Number(e.target.value))}
+              />
+            </div>
+          )}
+        />
+      </div>
+
+      <form.Field
+        name="courseTitle"
+        validators={{ onChange: courseSchema.shape.courseTitle }}
+        children={(field) => (
+          <div className="space-y-1">
+            <Label>Course Title *</Label>
+            <Input
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          </div>
+        )}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form.Field
+          name="courseType"
+          children={(field) => (
+            <div className="space-y-1">
+              <Label>Course Type *</Label>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Core">Core</SelectItem>
+                  <SelectItem value="Elective">Elective</SelectItem>
+                  <SelectItem value="General">General</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
+        <form.Field
+          name="level"
+          children={(field) => (
+            <div className="space-y-1">
+              <Label>Level *</Label>
+              <Select
+                value={String(field.state.value)}
+                onValueChange={(value) => field.handleChange(Number(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[100, 200, 300, 400, 500, 600, 700, 800, 900].map(
+                    (level) => (
+                      <SelectItem key={level} value={String(level)}>
+                        {level}
+                      </SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form.Field
+          name="semester"
+          children={(field) => (
+            <div className="space-y-1">
+              <Label>Semester *</Label>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="First">First</SelectItem>
+                  <SelectItem value="Second">Second</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
+        <form.Field
+          name="departmentId"
+          validators={{ onChange: courseSchema.shape.departmentId }}
+          children={(field) => (
+            <div className="space-y-1">
+              <Label>Department *</Label>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments?.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
+      </div>
+
+      <form.Field
+        name="description"
+        children={(field) => (
+          <div className="space-y-1">
+            <Label>Description</Label>
+            <Textarea
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          </div>
+        )}
+      />
+
+      <form.Field
+        name="isActive"
+        children={(field) => (
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isActive"
+              checked={field.state.value}
+              onCheckedChange={(checked) => field.handleChange(Boolean(checked))}
+            />
+            <Label htmlFor="isActive">Is Active</Label>
+          </div>
+        )}
+      />
+
+      <div className="flex justify-end pt-4 border-t">
+        <Button
+          type="submit"
+          disabled={createMutation.isPending || updateMutation.isPending}
         >
-          <div className="grid grid-cols-2 gap-4">
-            <form.AppField name="courseCode">
-              {(field) => (
-                <div>
-                  <Label className="mb-2">Course Code *</Label>
-                  <Input
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                  <FieldError field={field} />
-                </div>
-              )}
-            </form.AppField>
-            <form.Field name="creditUnits">
-              {(field) => (
-                <div>
-                  <Label className="mb-2">Credit Units</Label>
-                  <Input
-                    type="number"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
-                  />
-                  <FieldError field={field} />
-                </div>
-              )}
-            </form.Field>
-          </div>
-
-          <form.Field name="courseTitle">
-            {(field) => (
-              <div>
-                <Label className="mb-2">Course Title</Label>
-                <Input
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                <FieldError field={field} />
-              </div>
-            )}
-          </form.Field>
-
-          <div className="grid grid-cols-2 gap-4">
-            <form.Field name="courseType">
-              {(field) => (
-                <div>
-                  <Label className="mb-2">Course Type</Label>
-                  <Select
-                    value={field.state.value}
-                    onValueChange={field.handleChange}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="select course type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Core">Core</SelectItem>
-                      <SelectItem value="Elective">Elective</SelectItem>
-                      <SelectItem value="General">General</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FieldError field={field} />
-                </div>
-              )}
-            </form.Field>
-            <form.Field name="level">
-              {(field) => (
-                <div>
-                  <Label className="mb-2">Level</Label>
-                  <Select
-                    value={field.state.value.toString()}
-                    onValueChange={(value) => field.handleChange(Number(value))}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="select level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="100">100</SelectItem>
-                      <SelectItem value="200">200</SelectItem>
-                      <SelectItem value="300">300</SelectItem>
-                      <SelectItem value="400">400</SelectItem>
-                      <SelectItem value="500">500</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FieldError field={field} />
-                </div>
-              )}
-            </form.Field>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <form.AppField name="semester">
-              {(field) => <field.SemesterField />}
-            </form.AppField>
-            <form.AppField name="departmentId">
-              {(field) => <field.DepartmentField />}
-            </form.AppField>
-          </div>
-
-          <form.Field name="description">
-            {(field) => (
-              <div>
-                <Label>Description</Label>
-                <Textarea
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                <FieldError field={field} />
-              </div>
-            )}
-          </form.Field>
-
-          <form.Field name="isActive">
-            {(field) => (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  checked={field.state.value}
-                  onCheckedChange={(e) => field.handleChange(Boolean(e))}
-                />
-                <Label>Active</Label>
-              </div>
-            )}
-          </form.Field>
-
-          <Button
-            type="submit"
-            disabled={createMutation.isPending || updateMutation.isPending}
-          >
-            {createMutation.isPending || updateMutation.isPending
-              ? "Saving..."
-              : mode === "create"
-              ? "Create Course"
-              : "Update Course"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+          {createMutation.isPending || updateMutation.isPending
+            ? "Saving..."
+            : mode === "create"
+            ? "Create Course"
+            : "Update Course"}
+        </Button>
+      </div>
+    </form>
   );
 };
